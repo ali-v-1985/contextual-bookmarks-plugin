@@ -32,7 +32,6 @@ import javax.swing.JSplitPane
 import javax.swing.JTextArea
 import javax.swing.JToolBar
 import javax.swing.JTree
-import javax.swing.event.TreeSelectionEvent
 import javax.swing.tree.TreePath
 
 class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
@@ -44,10 +43,16 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
         lineWrap = true
         wrapStyleWord = true
         preferredSize = Dimension(220, 100)
+        text = SELECTION_GUIDANCE
     }
     private val activeOnly = JCheckBox("Active contexts only", true)
     private val scope = JComboBox(BookmarkScopeKind.entries.toTypedArray()).apply {
         selectedItem = manager.preferredScope()
+    }
+    private val mnemonicButton = JButton("Assign mnemonic…").apply {
+        isEnabled = false
+        toolTipText = "Assign, change, or clear the mnemonic of the selected bookmark"
+        addActionListener { selectedRecord()?.let(::assignMnemonic) }
     }
 
     init {
@@ -55,7 +60,7 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
             isFloatable = false
             add(JButton("Add current").apply { addActionListener { addCurrent() } })
             add(JButton("Navigate").apply { addActionListener { selectedRecord()?.let(::navigate) } })
-            add(JButton("Mnemonic").apply { addActionListener { selectedRecord()?.let(::assignMnemonic) } })
+            add(mnemonicButton)
             add(JButton("Rename").apply { addActionListener { selectedRecord()?.let(::editDescription) } })
             add(JButton("Reassign").apply { addActionListener { selectedRecord()?.let(::reassign) } })
             add(JButton("Relink").apply { addActionListener { selectedRecord()?.let(::relink) } })
@@ -82,7 +87,7 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
             (scope.selectedItem as? BookmarkScopeKind)?.let(manager::setPreferredScope)
         }
         activeOnly.addActionListener { refresh() }
-        tree.addTreeSelectionListener(::selectionChanged)
+        tree.addTreeSelectionListener { updateSelection() }
         tree.addMouseListener(object : MouseAdapter() {
             override fun mouseClicked(event: MouseEvent) {
                 if (event.clickCount == 2) selectedRecord()?.let(::navigate)
@@ -100,21 +105,23 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
         for (row in 0 until tree.rowCount) tree.expandRow(row)
         selectedId?.let(::selectId)
         scope.selectedItem = manager.preferredScope()
+        updateSelection()
     }
 
     override fun dispose() = Unit
 
     private fun selectedRecord(): BookmarkRecord? = (tree.lastSelectedPathComponent as? BookmarkTreeNode)?.record
 
-    private fun selectionChanged(event: TreeSelectionEvent) {
-        val record = (event.path.lastPathComponent as? BookmarkTreeNode)?.record
+    private fun updateSelection() {
+        val record = selectedRecord()
+        mnemonicButton.isEnabled = record != null
         details.text = record?.let {
             buildString {
                 appendLine(it.description ?: "No description")
                 appendLine(it.fileUrl)
                 append("Line ${it.line + 1}, ${it.scopeKind.name.lowercase()}, ${it.locationStatus.name.lowercase()}")
             }
-        }.orEmpty()
+        } ?: SELECTION_GUIDANCE
     }
 
     private fun selectId(id: String) {
@@ -209,6 +216,11 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
             else -> null
         }
         message?.let { Messages.showWarningDialog(project, it, "Contextual Bookmarks") }
+    }
+
+    private companion object {
+        const val SELECTION_GUIDANCE =
+            "Select a bookmark to navigate, assign a mnemonic, rename, reassign, relink, or delete it."
     }
 }
 

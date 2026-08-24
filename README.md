@@ -65,6 +65,9 @@ the **Tools | Contextual Bookmarks** group. The active view shows Global plus
 matching Branch and Changelist bookmarks. Clear **Active contexts only** to see
 inactive/missing contexts and unavailable locations.
 
+Select a bookmark row before using its management actions. **Assign mnemonic…**
+sets, changes, or clears the selected bookmark's mnemonic.
+
 Range markers follow edits while a file is open. Before saves and context
 changes, the plugin records the current file URL, zero-based position, and
 normalized hashes of the current and neighboring lines. After restart it checks

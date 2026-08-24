@@ -40,12 +40,25 @@ object MnemonicChooserPopup {
     }
 
     fun assign(project: Project, record: BookmarkRecord, after: (BookmarkOperationResult) -> Unit) {
-        val mnemonic = Messages.showInputDialog(
-            project,
-            "Enter one digit or Latin letter, or leave empty to clear",
-            "Assign Mnemonic",
-            Messages.getQuestionIcon(),
-        ) ?: return
+        assign(project, record, after) { initialValue ->
+            Messages.showInputDialog(
+                project,
+                "Enter one digit or Latin letter, or leave empty to clear",
+                "Assign Mnemonic",
+                Messages.getQuestionIcon(),
+                initialValue,
+                null,
+            )
+        }
+    }
+
+    internal fun assign(
+        project: Project,
+        record: BookmarkRecord,
+        after: (BookmarkOperationResult) -> Unit,
+        requestMnemonic: (initialValue: String) -> String?,
+    ) {
+        val mnemonic = requestMnemonic(record.mnemonic.orEmpty()) ?: return
         after(project.service<ContextualBookmarkManager>().edit(record.id, record.description, mnemonic.ifBlank { null }))
     }
 }
