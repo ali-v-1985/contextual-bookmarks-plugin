@@ -19,4 +19,83 @@
 
     <resource-bundle>messages.ContextualBookmarksBundle</resource-bundle>
 
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="me.a1i.contextualbookmarks.startup.ContextualBookmarksProjectActivity"/>
+        <toolWindow id="Contextual Bookmarks"
+                    anchor="right"
+                    icon="/icons/contextualBookmarks.svg"
+                    factoryClass="me.a1i.contextualbookmarks.ui.ContextualBookmarksToolWindowFactory"/>
+        <statusBarWidgetFactory id="ContextualBookmarks.Scope"
+                                implementation="me.a1i.contextualbookmarks.ui.BookmarkScopeStatusBarWidgetFactory"/>
+        <notificationGroup id="Contextual Bookmarks" displayType="BALLOON" isLogByDefault="true"/>
+    </extensions>
+
+    <actions>
+        <group id="ContextualBookmarks.Group"
+               text="%group.contextual.bookmarks.text"
+               popup="true"
+               icon="/icons/contextualBookmarks.svg">
+            <action id="ContextualBookmarks.Toggle"
+                    class="me.a1i.contextualbookmarks.actions.ToggleContextualBookmarkAction"
+                    text="%action.toggle.text"
+                    description="%action.toggle.description"/>
+            <action id="ContextualBookmarks.AddMnemonic"
+                    class="me.a1i.contextualbookmarks.actions.AddMnemonicBookmarkAction"
+                    text="%action.add.mnemonic.text"/>
+            <action id="ContextualBookmarks.AddGlobal"
+                    class="me.a1i.contextualbookmarks.actions.AddGlobalBookmarkAction"
+                    text="%action.add.global.text"/>
+            <separator/>
+            <action id="ContextualBookmarks.Show"
+                    class="me.a1i.contextualbookmarks.actions.ShowContextualBookmarksAction"
+                    text="%action.show.text"/>
+            <action id="ContextualBookmarks.Next"
+                    class="me.a1i.contextualbookmarks.actions.NextContextualBookmarkAction"
+                    text="%action.next.text"/>
+            <action id="ContextualBookmarks.Previous"
+                    class="me.a1i.contextualbookmarks.actions.PreviousContextualBookmarkAction"
+                    text="%action.previous.text"/>
+            <separator/>
+            <group id="ContextualBookmarks.Mnemonics" text="%group.mnemonics.text" popup="true">
+                <action id="ContextualBookmarks.Mnemonic0" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic0Action" text="0"/>
+                <action id="ContextualBookmarks.Mnemonic1" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic1Action" text="1"/>
+                <action id="ContextualBookmarks.Mnemonic2" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic2Action" text="2"/>
+                <action id="ContextualBookmarks.Mnemonic3" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic3Action" text="3"/>
+                <action id="ContextualBookmarks.Mnemonic4" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic4Action" text="4"/>
+                <action id="ContextualBookmarks.Mnemonic5" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic5Action" text="5"/>
+                <action id="ContextualBookmarks.Mnemonic6" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic6Action" text="6"/>
+                <action id="ContextualBookmarks.Mnemonic7" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic7Action" text="7"/>
+                <action id="ContextualBookmarks.Mnemonic8" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic8Action" text="8"/>
+                <action id="ContextualBookmarks.Mnemonic9" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic9Action" text="9"/>
+                <action id="ContextualBookmarks.MnemonicA" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicAAction" text="A"/>
+                <action id="ContextualBookmarks.MnemonicB" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicBAction" text="B"/>
+                <action id="ContextualBookmarks.MnemonicC" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicCAction" text="C"/>
+                <action id="ContextualBookmarks.MnemonicD" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicDAction" text="D"/>
+                <action id="ContextualBookmarks.MnemonicE" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicEAction" text="E"/>
+                <action id="ContextualBookmarks.MnemonicF" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicFAction" text="F"/>
+                <action id="ContextualBookmarks.MnemonicG" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicGAction" text="G"/>
+                <action id="ContextualBookmarks.MnemonicH" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicHAction" text="H"/>
+                <action id="ContextualBookmarks.MnemonicI" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicIAction" text="I"/>
+                <action id="ContextualBookmarks.MnemonicJ" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicJAction" text="J"/>
+                <action id="ContextualBookmarks.MnemonicK" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicKAction" text="K"/>
+                <action id="ContextualBookmarks.MnemonicL" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicLAction" text="L"/>
+                <action id="ContextualBookmarks.MnemonicM" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicMAction" text="M"/>
+                <action id="ContextualBookmarks.MnemonicN" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicNAction" text="N"/>
+                <action id="ContextualBookmarks.MnemonicO" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicOAction" text="O"/>
+                <action id="ContextualBookmarks.MnemonicP" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicPAction" text="P"/>
+                <action id="ContextualBookmarks.MnemonicQ" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicQAction" text="Q"/>
+                <action id="ContextualBookmarks.MnemonicR" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicRAction" text="R"/>
+                <action id="ContextualBookmarks.MnemonicS" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicSAction" text="S"/>
+                <action id="ContextualBookmarks.MnemonicT" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicTAction" text="T"/>
+                <action id="ContextualBookmarks.MnemonicU" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicUAction" text="U"/>
+                <action id="ContextualBookmarks.MnemonicV" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicVAction" text="V"/>
+                <action id="ContextualBookmarks.MnemonicW" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicWAction" text="W"/>
+                <action id="ContextualBookmarks.MnemonicX" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicXAction" text="X"/>
+                <action id="ContextualBookmarks.MnemonicY" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicYAction" text="Y"/>
+                <action id="ContextualBookmarks.MnemonicZ" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicZAction" text="Z"/>
+            </group>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </group>
+    </actions>
 </idea-plugin>
