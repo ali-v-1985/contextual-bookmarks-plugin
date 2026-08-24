@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>me.a1i.contextualbookmarks</id>
     <name>Contextual Bookmarks</name>
-    <vendor email="ali.valizadeh.h@gmail.com" url="https://a1i.me">Ali Valizadeh</vendor>
+    <vendor email="ali.valizadeh.h@gmail.com" url="https://a1i.me">A1i</vendor>
 
     <description><![CDATA[
         <p>Persistent Global, VCS Branch, and active Changelist bookmarks for IntelliJ IDEA.</p>
@@ -32,31 +32,23 @@
 
     <actions>
         <group id="ContextualBookmarks.Group"
-               text="%group.contextual.bookmarks.text"
                popup="true"
                icon="/icons/contextualBookmarks.svg">
             <action id="ContextualBookmarks.Toggle"
-                    class="me.a1i.contextualbookmarks.actions.ToggleContextualBookmarkAction"
-                    text="%action.toggle.text"
-                    description="%action.toggle.description"/>
+                    class="me.a1i.contextualbookmarks.actions.ToggleContextualBookmarkAction"/>
             <action id="ContextualBookmarks.AddMnemonic"
-                    class="me.a1i.contextualbookmarks.actions.AddMnemonicBookmarkAction"
-                    text="%action.add.mnemonic.text"/>
+                    class="me.a1i.contextualbookmarks.actions.AddMnemonicBookmarkAction"/>
             <action id="ContextualBookmarks.AddGlobal"
-                    class="me.a1i.contextualbookmarks.actions.AddGlobalBookmarkAction"
-                    text="%action.add.global.text"/>
+                    class="me.a1i.contextualbookmarks.actions.AddGlobalBookmarkAction"/>
             <separator/>
             <action id="ContextualBookmarks.Show"
-                    class="me.a1i.contextualbookmarks.actions.ShowContextualBookmarksAction"
-                    text="%action.show.text"/>
+                    class="me.a1i.contextualbookmarks.actions.ShowContextualBookmarksAction"/>
             <action id="ContextualBookmarks.Next"
-                    class="me.a1i.contextualbookmarks.actions.NextContextualBookmarkAction"
-                    text="%action.next.text"/>
+                    class="me.a1i.contextualbookmarks.actions.NextContextualBookmarkAction"/>
             <action id="ContextualBookmarks.Previous"
-                    class="me.a1i.contextualbookmarks.actions.PreviousContextualBookmarkAction"
-                    text="%action.previous.text"/>
+                    class="me.a1i.contextualbookmarks.actions.PreviousContextualBookmarkAction"/>
             <separator/>
-            <group id="ContextualBookmarks.Mnemonics" text="%group.mnemonics.text" popup="true">
+            <group id="ContextualBookmarks.Mnemonics" popup="true">
                 <action id="ContextualBookmarks.Mnemonic0" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic0Action" text="0"/>
                 <action id="ContextualBookmarks.Mnemonic1" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic1Action" text="1"/>
                 <action id="ContextualBookmarks.Mnemonic2" class="me.a1i.contextualbookmarks.actions.NavigateMnemonic2Action" text="2"/>

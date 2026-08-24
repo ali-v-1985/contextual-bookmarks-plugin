@@ -6,6 +6,10 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve localized Contextual Bookmarks action and group names in IDE menus.
+
 ## [0.1.0] - 2026-08-19
 
 ### Added
