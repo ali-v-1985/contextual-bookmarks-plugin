@@ -1,5 +1,6 @@
 package me.a1i.contextualbookmarks.actions
 
+import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
@@ -27,5 +28,11 @@ class ActionLocalizationTest : BasePlatformTestCase() {
             "Create or remove a bookmark in the preferred context scope",
             actionManager.getAction("ContextualBookmarks.Toggle").templatePresentation.description,
         )
+
+        val contextualBookmarks = actionManager.getAction("ContextualBookmarks.Group")
+        val editorPopup = actionManager.getAction("EditorPopupMenu") as ActionGroup
+        val gutterPopup = actionManager.getAction("EditorGutterPopupMenu") as ActionGroup
+        assertFalse(editorPopup.getChildren(null).contains(contextualBookmarks))
+        assertTrue(gutterPopup.getChildren(null).contains(contextualBookmarks))
     }
 }

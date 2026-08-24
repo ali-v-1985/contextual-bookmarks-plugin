@@ -87,7 +87,7 @@
                 <action id="ContextualBookmarks.MnemonicZ" class="me.a1i.contextualbookmarks.actions.NavigateMnemonicZAction" text="Z"/>
             </group>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="EditorGutterPopupMenu" anchor="last"/>
         </group>
     </actions>
 </idea-plugin>

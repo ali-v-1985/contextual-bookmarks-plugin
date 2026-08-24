@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.components.service
+import com.intellij.openapi.editor.ex.EditorGutterComponentEx
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.Messages
@@ -51,12 +52,14 @@ abstract class EditorBookmarkAction : DumbAwareAction() {
         val project = event.project ?: return null
         val editor = event.getData(CommonDataKeys.EDITOR) ?: return null
         val file = event.getData(CommonDataKeys.VIRTUAL_FILE) ?: return null
-        val line = editor.caretModel.logicalPosition.line.coerceIn(0, (editor.document.lineCount - 1).coerceAtLeast(0))
+        val gutterLine = event.getData(EditorGutterComponentEx.LOGICAL_LINE_AT_CURSOR)
+        val caretPosition = editor.caretModel.logicalPosition
+        val line = (gutterLine ?: caretPosition.line).coerceIn(0, (editor.document.lineCount - 1).coerceAtLeast(0))
         val resolver = project.service<BookmarkContextResolver>()
         return CreateBookmarkRequest(
             fileUrl = file.url,
             line = line,
-            column = editor.caretModel.logicalPosition.column,
+            column = if (gutterLine == null) caretPosition.column else 0,
             mnemonic = mnemonic,
             signature = DocumentLocationSignatures.fromDocument(editor.document, line),
             scopeKind = scopeKind,
