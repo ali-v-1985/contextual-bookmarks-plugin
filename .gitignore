@@ -1,0 +1,25 @@
+/.idea/
+/.air/
+
+# Gradle and build output
+/.gradle/
+/build/
+/out/
+/.kotlin/
+
+# IntelliJ Platform sandbox and local run state
+/.intellijPlatform/
+/build/idea-sandbox/
+
+# Local environment, signing, and publishing material
+.env
+.env.*
+*.jks
+*.keystore
+*.pem
+*.p12
+*.pfx
+local.properties
+
+# Operating-system files
+.DS_Store

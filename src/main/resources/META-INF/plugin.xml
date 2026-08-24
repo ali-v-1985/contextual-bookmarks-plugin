@@ -1,0 +1,22 @@
+<!-- Plugin identity is permanent after Marketplace publication. -->
+<idea-plugin>
+    <id>me.a1i.contextualbookmarks</id>
+    <name>Contextual Bookmarks</name>
+    <vendor email="ali.valizadeh.h@gmail.com" url="https://a1i.me">Ali Valizadeh</vendor>
+
+    <description><![CDATA[
+        <p>Persistent Global, VCS Branch, and active Changelist bookmarks for IntelliJ IDEA.</p>
+        <p>Contextual Bookmarks is independent of IDEA's native bookmarks. It never imports,
+        changes, hides, or removes native bookmark data.</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.vcs</depends>
+    <dependencies>
+        <module name="intellij.platform.vcs.dvcs"/>
+        <module name="intellij.platform.vcs.dvcs.impl"/>
+    </dependencies>
+
+    <resource-bundle>messages.ContextualBookmarksBundle</resource-bundle>
+
+</idea-plugin>
