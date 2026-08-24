@@ -27,6 +27,7 @@ kotlin {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
+            // IntelliJ IDEA 2025.3.4 / build 253 is the compile target; plugin bytecode targets Java 21.
             sinceBuild = "253"
             // IntelliJ IDEA 2026.2.1 resolves to build branch 262.
             untilBuild = "262.*"
@@ -62,7 +63,8 @@ intellijPlatform {
 
 tasks {
     wrapper {
-        gradleVersion = "9.5.1"
+        gradleVersion = "9.7.1"
         distributionType = Wrapper.DistributionType.BIN
+        distributionSha256Sum = "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a"
     }
 }

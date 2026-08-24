@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 import org.jetbrains.intellij.platform.gradle.extensions.intellijPlatform
 
 pluginManagement {
