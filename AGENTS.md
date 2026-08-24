@@ -9,8 +9,8 @@ These instructions apply to the entire repository.
 This is a Kotlin/JVM IntelliJ Platform plugin built with the Gradle wrapper. The
 permanent plugin ID is `me.a1i.contextualbookmarks`; production sources use
 `me.a1i.contextualbookmarks` under the `me.a1i` Gradle group. The compile target
-is IntelliJ IDEA 2025.3.4 / build 253. Kotlin targets JVM 21, the Gradle build
-runs on Java 25 LTS, and the descriptor is capped at build 262.* so the configured
+is IntelliJ IDEA 2025.3.4 / build 253. Kotlin, the Gradle build, and Qodana use
+Java 21, and the descriptor is capped at build 262.* so the configured
 verifier covers IDEA 2025.3.4, 2026.1.3, and 2026.2.1.
 
 Bookmark state is schema-versioned, private project workspace data with roaming
