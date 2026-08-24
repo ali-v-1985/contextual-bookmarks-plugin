@@ -28,7 +28,7 @@ intellijPlatform {
     pluginConfiguration {
         ideaVersion {
             sinceBuild = "253"
-            // IntelliJ IDEA 2026.2.0.1 resolves to build branch 262.
+            // IntelliJ IDEA 2026.2.1 resolves to build branch 262.
             untilBuild = "262.*"
         }
         changeNotes = provider {
@@ -44,7 +44,7 @@ intellijPlatform {
         ides {
             create(IntelliJPlatformType.IntellijIdea, "2025.3.4")
             create(IntelliJPlatformType.IntellijIdea, "2026.1.3")
-            create(IntelliJPlatformType.IntellijIdea, "2026.2.0.1")
+            create(IntelliJPlatformType.IntellijIdea, "2026.2.1")
         }
     }
 
@@ -62,7 +62,7 @@ intellijPlatform {
 
 tasks {
     wrapper {
-        gradleVersion = "9.5.0"
+        gradleVersion = "9.5.1"
         distributionType = Wrapper.DistributionType.BIN
     }
 }

@@ -7,9 +7,9 @@ pluginManagement {
     }
 
     plugins {
-        id("org.jetbrains.kotlin.jvm") version "2.3.20"
-        id("org.jetbrains.intellij.platform") version "2.16.0"
-        id("org.jetbrains.intellij.platform.settings") version "2.16.0"
+        id("org.jetbrains.kotlin.jvm") version "2.4.10"
+        id("org.jetbrains.intellij.platform") version "2.18.1"
+        id("org.jetbrains.intellij.platform.settings") version "2.18.1"
         id("org.jetbrains.changelog") version "2.5.0"
         id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     }
@@ -20,7 +20,7 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention")
 }
 
-rootProject.name = "contextual-bookmarks"
+rootProject.name = "contextual-bookmarks-plugin"
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
