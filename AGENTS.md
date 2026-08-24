@@ -6,12 +6,15 @@ These instructions apply to the entire repository.
 
 ## Repository State
 
-This project is not scaffolded yet. At the time this file was created, the
-repository contained only IDE metadata and a root `.gitignore`; there were no
-source files, build scripts, tests, or documented development commands.
+This is a Kotlin/JVM IntelliJ Platform plugin built with the Gradle wrapper. The
+permanent plugin ID is `me.a1i.contextualbookmarks`; production sources use
+`me.a1i.contextualbookmarks` under the `me.a1i` Gradle group. The compile target
+is IntelliJ IDEA 2025.3.4 / build 253,
+Kotlin targets JVM 21, and the descriptor is capped at build 262.* so the
+configured verifier covers IDEA 2025.3.4, 2026.1.3, and 2026.2.0.1.
 
-Do not assume a build system, language, IntelliJ Platform version, or plugin ID
-until those choices are represented in tracked project files.
+Bookmark state is schema-versioned, private project workspace data with roaming
+disabled. Treat its DTO fields and scope identity as compatibility-sensitive.
 
 ## Working Guidelines
 
@@ -47,3 +50,20 @@ Once the plugin is scaffolded:
 Update this file when the project gains concrete build, test, formatting, or run
 commands. Document only commands that are present in the repository and have been
 verified locally.
+
+## Verified Commands
+
+Use the checked-in wrapper. The following commands have succeeded locally:
+
+```bash
+./gradlew test --tests 'me.a1i.contextualbookmarks.model.*' --tests 'me.a1i.contextualbookmarks.navigation.BookmarkLocatorTest' --tests 'me.a1i.contextualbookmarks.persistence.*'
+./gradlew test --tests 'me.a1i.contextualbookmarks.context.*' --tests 'me.a1i.contextualbookmarks.service.*'
+./gradlew test --tests 'me.a1i.contextualbookmarks.editor.BookmarkPositionTrackerTest'
+./gradlew check
+./gradlew buildPlugin
+./gradlew verifyPluginProjectConfiguration verifyPluginStructure
+./gradlew verifyPlugin
+```
+
+`verifyPlugin` is configured for the three concrete IDE releases above. Signing
+and publishing require environment-only secrets and have not been run locally.
