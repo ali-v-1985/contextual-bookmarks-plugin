@@ -85,8 +85,8 @@ machines or people. Export/import is outside the 0.1.0 scope.
 
 Version 0.1.0 compiles against IntelliJ IDEA 2025.3.4 / build 253 and declares
 compatibility through build 262.*. The configured verifier resolves IDEA
-2026.1.3 to build 261 and IDEA 2026.2.0.1 to build 262. Plugin bytecode targets
-Java 21; IDEA 2026.2 itself runs on its required Java 25 runtime.
+2026.1.3 to build 261 and IDEA 2026.2.1 to build 262. Plugin bytecode targets
+Java 21; the Gradle build and IDEA 2026.2 both run on Java 25, the latest LTS.
 
 To install a local build, choose **Settings | Plugins | gear icon | Install Plugin
 from Disk** and select the ZIP produced under `build/distributions`.
