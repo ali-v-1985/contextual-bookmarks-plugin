@@ -8,16 +8,18 @@ import org.junit.Test
 class BookmarkLocatorTest {
     @Test
     fun `bounded line window preserves absolute document positions`() {
-        val record = BookmarkRecord(
-            line = 100,
-            currentLineHash = LocationSignatures.hash("target"),
-        )
+        val record =
+            BookmarkRecord(
+                line = 100,
+                currentLineHash = LocationSignatures.hash("target"),
+            )
 
-        val result = BookmarkLocator().locate(
-            record = record,
-            lines = listOf("before", "target", "after"),
-            firstLine = 100,
-        )
+        val result =
+            BookmarkLocator().locate(
+                record = record,
+                lines = listOf("before", "target", "after"),
+                firstLine = 100,
+            )
 
         assertEquals(BookmarkLocationResult.Relocated(101), result)
     }
@@ -52,10 +54,11 @@ class BookmarkLocatorTest {
     @Test
     fun `ambiguous repeated signatures do not guess`() {
         val signature = LocationSignatures.fromLines(listOf("target"), 0)
-        val record = BookmarkRecord(
-            line = 9,
-            currentLineHash = signature.currentLineHash,
-        )
+        val record =
+            BookmarkRecord(
+                line = 9,
+                currentLineHash = signature.currentLineHash,
+            )
         assertEquals(BookmarkLocationResult.Ambiguous(listOf(0, 2)), locator.locate(record, listOf("target", "x", "target")))
     }
 
@@ -74,7 +77,10 @@ class BookmarkLocatorTest {
         assertEquals(BookmarkLocationResult.Missing, locator.locate(BookmarkRecord(line = 12), listOf("only")))
     }
 
-    private fun record(line: Int, lines: List<String>): BookmarkRecord {
+    private fun record(
+        line: Int,
+        lines: List<String>,
+    ): BookmarkRecord {
         val signature = LocationSignatures.fromLines(lines, line)
         return BookmarkRecord(
             line = line,

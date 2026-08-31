@@ -14,32 +14,41 @@ import me.a1i.contextualbookmarks.service.ContextualBookmarkManager
 import javax.swing.JList
 
 object MnemonicChooserPopup {
-    fun showNavigation(project: Project, records: List<BookmarkRecord>) {
-        JBPopupFactory.getInstance().createPopupChooserBuilder(records)
+    fun showNavigation(
+        project: Project,
+        records: List<BookmarkRecord>,
+    ) {
+        JBPopupFactory
+            .getInstance()
+            .createPopupChooserBuilder(records)
             .setTitle("Choose Contextual Bookmark")
             .setNamerForFiltering { record ->
                 listOfNotNull(record.mnemonic, record.description, record.fileUrl.substringAfterLast('/'))
                     .joinToString(" ")
-            }
-            .setRenderer(object : ColoredListCellRenderer<BookmarkRecord>() {
-                override fun customizeCellRenderer(
-                    list: JList<out BookmarkRecord>,
-                    value: BookmarkRecord,
-                    index: Int,
-                    selected: Boolean,
-                    hasFocus: Boolean,
-                ) {
-                    append(value.mnemonic.orEmpty(), SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES)
-                    append("  ${value.scopeLabel()}  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
-                    append(value.description ?: value.fileUrl.substringAfterLast('/'))
-                }
-            })
-            .setItemChosenCallback { project.service<BookmarkNavigator>().navigate(it) }
+            }.setRenderer(
+                object : ColoredListCellRenderer<BookmarkRecord>() {
+                    override fun customizeCellRenderer(
+                        list: JList<out BookmarkRecord>,
+                        value: BookmarkRecord,
+                        index: Int,
+                        selected: Boolean,
+                        hasFocus: Boolean,
+                    ) {
+                        append(value.mnemonic.orEmpty(), SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES)
+                        append("  ${value.scopeLabel()}  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+                        append(value.description ?: value.fileUrl.substringAfterLast('/'))
+                    }
+                },
+            ).setItemChosenCallback { project.service<BookmarkNavigator>().navigate(it) }
             .createPopup()
             .showInFocusCenter()
     }
 
-    fun assign(project: Project, record: BookmarkRecord, after: (BookmarkOperationResult) -> Unit) {
+    fun assign(
+        project: Project,
+        record: BookmarkRecord,
+        after: (BookmarkOperationResult) -> Unit,
+    ) {
         assign(project, record, after) { initialValue ->
             Messages.showInputDialog(
                 project,

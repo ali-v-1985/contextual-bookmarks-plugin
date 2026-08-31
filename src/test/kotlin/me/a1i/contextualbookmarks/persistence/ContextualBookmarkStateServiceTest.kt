@@ -1,10 +1,10 @@
 package me.a1i.contextualbookmarks.persistence
 
+import com.intellij.util.xmlb.XmlSerializer
 import me.a1i.contextualbookmarks.model.BookmarkRecord
 import me.a1i.contextualbookmarks.model.BookmarkScopeKind
 import me.a1i.contextualbookmarks.model.CURRENT_SCHEMA_VERSION
 import me.a1i.contextualbookmarks.model.ContextualBookmarkState
-import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.Element
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,25 +17,26 @@ class ContextualBookmarkStateServiceTest {
     @Test
     fun `round trips schema one with every context field`() {
         val service = ContextualBookmarkStateService()
-        val records = mutableListOf(
-            BookmarkRecord(id = "g", fileUrl = "file:///g", scopeKind = BookmarkScopeKind.GLOBAL, order = 1),
-            BookmarkRecord(
-                id = "b",
-                fileUrl = "file:///b",
-                scopeKind = BookmarkScopeKind.BRANCH,
-                repositoryRootUrl = "file:///repo",
-                branchName = "main",
-                order = 2,
-            ),
-            BookmarkRecord(
-                id = "c",
-                fileUrl = "file:///c",
-                scopeKind = BookmarkScopeKind.CHANGELIST,
-                changelistId = "stable-id",
-                changelistName = "Work",
-                order = 3,
-            ),
-        )
+        val records =
+            mutableListOf(
+                BookmarkRecord(id = "g", fileUrl = "file:///g", scopeKind = BookmarkScopeKind.GLOBAL, order = 1),
+                BookmarkRecord(
+                    id = "b",
+                    fileUrl = "file:///b",
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    repositoryRootUrl = "file:///repo",
+                    branchName = "main",
+                    order = 2,
+                ),
+                BookmarkRecord(
+                    id = "c",
+                    fileUrl = "file:///c",
+                    scopeKind = BookmarkScopeKind.CHANGELIST,
+                    changelistId = "stable-id",
+                    changelistName = "Work",
+                    order = 3,
+                ),
+            )
         service.loadState(
             XmlSerializer.serialize(
                 ContextualBookmarkState(
@@ -60,7 +61,8 @@ class ContextualBookmarkStateServiceTest {
             XmlSerializer.serialize(
                 ContextualBookmarkState(
                     schemaVersion = 0,
-                    bookmarks = mutableListOf(
+                    bookmarks =
+                    mutableListOf(
                         BookmarkRecord(
                             id = "x",
                             line = -4,
@@ -98,11 +100,12 @@ class ContextualBookmarkStateServiceTest {
     fun `future schema XML is preserved verbatim and mutations are blocked`() {
         val service = ContextualBookmarkStateService()
         val futureVersion = CURRENT_SCHEMA_VERSION + 1
-        val futureXml = Element("state").addContent(
-            Element("option")
-                .setAttribute("name", "schemaVersion")
-                .setAttribute("value", futureVersion.toString()),
-        )
+        val futureXml =
+            Element("state").addContent(
+                Element("option")
+                    .setAttribute("name", "schemaVersion")
+                    .setAttribute("value", futureVersion.toString()),
+            )
         futureXml.addContent(
             Element("option")
                 .setAttribute("name", "futureOnlyField")
@@ -118,10 +121,14 @@ class ContextualBookmarkStateServiceTest {
         val update = service.updateBookmarks { it += BookmarkRecord(id = "known-field-update") }
 
         val savedXml = service.state
-        val unknownField = savedXml.getChildren("option")
-            .firstOrNull { it.getAttributeValue("name") == "futureOnlyField" }
-        val futureEnum = savedXml.getChildren("option")
-            .firstOrNull { it.getAttributeValue("name") == "preferredScope" }
+        val unknownField =
+            savedXml
+                .getChildren("option")
+                .firstOrNull { it.getAttributeValue("name") == "futureOnlyField" }
+        val futureEnum =
+            savedXml
+                .getChildren("option")
+                .firstOrNull { it.getAttributeValue("name") == "preferredScope" }
         assertTrue(service.isReadOnlyForFutureSchema())
         assertFalse(update.accepted)
         assertEquals(futureVersion, service.snapshot().schemaVersion)

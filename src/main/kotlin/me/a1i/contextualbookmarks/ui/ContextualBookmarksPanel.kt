@@ -34,47 +34,56 @@ import javax.swing.JToolBar
 import javax.swing.JTree
 import javax.swing.tree.TreePath
 
-class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
+class ContextualBookmarksPanel(
+    private val project: Project,
+) : JPanel(BorderLayout()),
+    Disposable {
     private val manager = project.service<ContextualBookmarkManager>()
     private val resolver = project.service<BookmarkContextResolver>()
     private val tree = JTree()
-    private val details = JTextArea().apply {
-        isEditable = false
-        lineWrap = true
-        wrapStyleWord = true
-        preferredSize = Dimension(220, 100)
-        text = SELECTION_GUIDANCE
-    }
+    private val details =
+        JTextArea().apply {
+            isEditable = false
+            lineWrap = true
+            wrapStyleWord = true
+            preferredSize = Dimension(220, 100)
+            text = SELECTION_GUIDANCE
+        }
     private val activeOnly = JCheckBox("Active contexts only", true)
-    private val scope = JComboBox(BookmarkScopeKind.entries.toTypedArray()).apply {
-        selectedItem = manager.preferredScope()
-    }
-    private val mnemonicButton = JButton("Assign mnemonic…").apply {
-        isEnabled = false
-        toolTipText = "Assign, change, or clear the mnemonic of the selected bookmark"
-        addActionListener { selectedRecord()?.let(::assignMnemonic) }
-    }
+    private val scope =
+        JComboBox(BookmarkScopeKind.entries.toTypedArray()).apply {
+            selectedItem = manager.preferredScope()
+        }
+    private val mnemonicButton =
+        JButton("Assign mnemonic…").apply {
+            isEnabled = false
+            toolTipText = "Assign, change, or clear the mnemonic of the selected bookmark"
+            addActionListener { selectedRecord()?.let(::assignMnemonic) }
+        }
 
     init {
-        val toolbar = JToolBar().apply {
-            isFloatable = false
-            add(JButton("Add current").apply { addActionListener { addCurrent() } })
-            add(JButton("Navigate").apply { addActionListener { selectedRecord()?.let(::navigate) } })
-            add(mnemonicButton)
-            add(JButton("Rename").apply { addActionListener { selectedRecord()?.let(::editDescription) } })
-            add(JButton("Reassign").apply { addActionListener { selectedRecord()?.let(::reassign) } })
-            add(JButton("Relink").apply { addActionListener { selectedRecord()?.let(::relink) } })
-            add(JButton("Delete").apply { addActionListener { selectedRecord()?.let(::delete) } })
-        }
-        val filters = JPanel(FlowLayout(FlowLayout.LEADING, 8, 2)).apply {
-            add(JLabel("Create in:"))
-            add(scope)
-            add(activeOnly)
-        }
-        val north = JPanel(BorderLayout()).apply {
-            add(toolbar, BorderLayout.NORTH)
-            add(filters, BorderLayout.SOUTH)
-        }
+        val toolbar =
+            JToolBar().apply {
+                isFloatable = false
+                add(JButton("Add current").apply { addActionListener { addCurrent() } })
+                add(JButton("Navigate").apply { addActionListener { selectedRecord()?.let(::navigate) } })
+                add(mnemonicButton)
+                add(JButton("Rename").apply { addActionListener { selectedRecord()?.let(::editDescription) } })
+                add(JButton("Reassign").apply { addActionListener { selectedRecord()?.let(::reassign) } })
+                add(JButton("Relink").apply { addActionListener { selectedRecord()?.let(::relink) } })
+                add(JButton("Delete").apply { addActionListener { selectedRecord()?.let(::delete) } })
+            }
+        val filters =
+            JPanel(FlowLayout(FlowLayout.LEADING, 8, 2)).apply {
+                add(JLabel("Create in:"))
+                add(scope)
+                add(activeOnly)
+            }
+        val north =
+            JPanel(BorderLayout()).apply {
+                add(toolbar, BorderLayout.NORTH)
+                add(filters, BorderLayout.SOUTH)
+            }
         add(north, BorderLayout.NORTH)
         add(
             JSplitPane(JSplitPane.VERTICAL_SPLIT, JScrollPane(tree), JScrollPane(details)).apply {
@@ -88,11 +97,13 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
         }
         activeOnly.addActionListener { refresh() }
         tree.addTreeSelectionListener { updateSelection() }
-        tree.addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(event: MouseEvent) {
-                if (event.clickCount == 2) selectedRecord()?.let(::navigate)
-            }
-        })
+        tree.addMouseListener(
+            object : MouseAdapter() {
+                override fun mouseClicked(event: MouseEvent) {
+                    if (event.clickCount == 2) selectedRecord()?.let(::navigate)
+                }
+            },
+        )
         manager.addListener(this) {
             ApplicationManager.getApplication().invokeLater { if (!project.isDisposed) refresh() }
         }
@@ -136,15 +147,16 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
         val file = editor.file
         val line = editor.editor.caretModel.logicalPosition.line
         val document = editor.editor.document
-        val result = manager.create(
-            CreateBookmarkRequest(
-                file.url,
-                line,
-                editor.editor.caretModel.logicalPosition.column,
-                signature = DocumentLocationSignatures.fromDocument(document, line),
-                context = BookmarkCreationContext(resolver.branchForFile(file), resolver.activeChangelist()),
-            ),
-        )
+        val result =
+            manager.create(
+                CreateBookmarkRequest(
+                    file.url,
+                    line,
+                    editor.editor.caretModel.logicalPosition.column,
+                    signature = DocumentLocationSignatures.fromDocument(document, line),
+                    context = BookmarkCreationContext(resolver.branchForFile(file), resolver.activeChangelist()),
+                ),
+            )
         showError(result)
     }
 
@@ -153,21 +165,37 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
     private fun assignMnemonic(record: BookmarkRecord) = MnemonicChooserPopup.assign(project, record, ::showError)
 
     private fun editDescription(record: BookmarkRecord) {
-        val value = Messages.showInputDialog(project, "Bookmark description", "Edit Contextual Bookmark", Messages.getQuestionIcon(), record.description, null)
-            ?: return
+        val value =
+            Messages.showInputDialog(
+                project,
+                "Bookmark description",
+                "Edit Contextual Bookmark",
+                Messages.getQuestionIcon(),
+                record.description,
+                null,
+            )
+                ?: return
         showError(manager.edit(record.id, value, record.mnemonic))
     }
 
     private fun reassign(record: BookmarkRecord) {
-        JBPopupFactory.getInstance().createPopupChooserBuilder(BookmarkScopeKind.entries.toList())
+        JBPopupFactory
+            .getInstance()
+            .createPopupChooserBuilder(BookmarkScopeKind.entries.toList())
             .setTitle("Reassign Contextual Bookmark")
             .setItemChosenCallback { kind -> reassign(record, kind) }
             .createPopup()
             .showInFocusCenter()
     }
 
-    private fun reassign(record: BookmarkRecord, kind: BookmarkScopeKind) {
-        val file = com.intellij.openapi.vfs.VirtualFileManager.getInstance().findFileByUrl(record.fileUrl)
+    private fun reassign(
+        record: BookmarkRecord,
+        kind: BookmarkScopeKind,
+    ) {
+        val file =
+            com.intellij.openapi.vfs.VirtualFileManager
+                .getInstance()
+                .findFileByUrl(record.fileUrl)
         showError(
             manager.reassign(
                 record.id,
@@ -194,27 +222,48 @@ class ContextualBookmarksPanel(private val project: Project) : JPanel(BorderLayo
     }
 
     private fun delete(record: BookmarkRecord) {
-        if (Messages.showYesNoDialog(project, "Delete this contextual bookmark?", "Delete Bookmark", Messages.getQuestionIcon()) == Messages.YES) {
+        if (Messages.showYesNoDialog(project, "Delete this contextual bookmark?", "Delete Bookmark", Messages.getQuestionIcon()) ==
+            Messages.YES
+        ) {
             manager.delete(listOf(record.id))
         }
     }
 
     private fun showError(result: BookmarkOperationResult) {
-        val message = when (result) {
-            is BookmarkOperationResult.ScopeUnavailable -> "${result.scopeKind.name.lowercase()} scope is unavailable in the current context"
-            is BookmarkOperationResult.MnemonicConflict -> if (result.records.isEmpty()) {
-                "Mnemonics must be one digit or Latin letter"
-            } else {
-                "That mnemonic is already used in this exact scope"
+        val message =
+            when (result) {
+                is BookmarkOperationResult.ScopeUnavailable -> {
+                    "${result.scopeKind.name.lowercase()} scope is unavailable in the current context"
+                }
+
+                is BookmarkOperationResult.MnemonicConflict -> {
+                    if (result.records.isEmpty()) {
+                        "Mnemonics must be one digit or Latin letter"
+                    } else {
+                        "That mnemonic is already used in this exact scope"
+                    }
+                }
+
+                is BookmarkOperationResult.DuplicateLocation -> {
+                    "A contextual bookmark already exists at this line in the selected scope"
+                }
+
+                is BookmarkOperationResult.AmbiguousToggle -> {
+                    "Several records match; choose one in the tree"
+                }
+
+                BookmarkOperationResult.ReadOnly -> {
+                    "Bookmarks are read-only because this project contains data from a newer plugin version"
+                }
+
+                BookmarkOperationResult.NotFound -> {
+                    "The bookmark no longer exists"
+                }
+
+                else -> {
+                    null
+                }
             }
-            is BookmarkOperationResult.DuplicateLocation ->
-                "A contextual bookmark already exists at this line in the selected scope"
-            is BookmarkOperationResult.AmbiguousToggle -> "Several records match; choose one in the tree"
-            BookmarkOperationResult.ReadOnly ->
-                "Bookmarks are read-only because this project contains data from a newer plugin version"
-            BookmarkOperationResult.NotFound -> "The bookmark no longer exists"
-            else -> null
-        }
         message?.let { Messages.showWarningDialog(project, it, "Contextual Bookmarks") }
     }
 

@@ -6,16 +6,17 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 class ActionLocalizationTest : BasePlatformTestCase() {
     fun testRegisteredActionsAndGroupsUseLocalizedPresentations() {
-        val expectedTexts = mapOf(
-            "ContextualBookmarks.Group" to "Contextual Bookmarks",
-            "ContextualBookmarks.Toggle" to "Toggle Contextual Bookmark",
-            "ContextualBookmarks.AddMnemonic" to "Add Contextual Mnemonic Bookmark…",
-            "ContextualBookmarks.AddGlobal" to "Add Global Contextual Bookmark",
-            "ContextualBookmarks.Show" to "Show Contextual Bookmarks",
-            "ContextualBookmarks.Next" to "Next Contextual Bookmark",
-            "ContextualBookmarks.Previous" to "Previous Contextual Bookmark",
-            "ContextualBookmarks.Mnemonics" to "Navigate by Mnemonic",
-        )
+        val expectedTexts =
+            mapOf(
+                "ContextualBookmarks.Group" to "Contextual Bookmarks",
+                "ContextualBookmarks.Toggle" to "Toggle Contextual Bookmark",
+                "ContextualBookmarks.AddMnemonic" to "Add Contextual Mnemonic Bookmark…",
+                "ContextualBookmarks.AddGlobal" to "Add Global Contextual Bookmark",
+                "ContextualBookmarks.Show" to "Show Contextual Bookmarks",
+                "ContextualBookmarks.Next" to "Next Contextual Bookmark",
+                "ContextualBookmarks.Previous" to "Previous Contextual Bookmark",
+                "ContextualBookmarks.Mnemonics" to "Navigate by Mnemonic",
+            )
         val actionManager = ActionManager.getInstance()
 
         expectedTexts.forEach { (id, expectedText) ->

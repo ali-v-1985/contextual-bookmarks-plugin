@@ -40,20 +40,25 @@ class BookmarkVisibilityPolicyTest {
 
     @Test
     fun `multiple roots contribute their independently matching records`() {
-        val records = listOf(
-            record(BookmarkScopeKind.GLOBAL, 1),
-            record(BookmarkScopeKind.BRANCH, 2).copy(repositoryRootUrl = "file:///a", branchName = "main"),
-            record(BookmarkScopeKind.BRANCH, 3).copy(repositoryRootUrl = "file:///b", branchName = "feature"),
-            record(BookmarkScopeKind.BRANCH, 4).copy(repositoryRootUrl = "file:///b", branchName = "main"),
-        )
-        val context = BookmarkContextSnapshot(
-            branches = setOf(BranchKey("file:///a", "main"), BranchKey("file:///b", "feature")),
-        )
+        val records =
+            listOf(
+                record(BookmarkScopeKind.GLOBAL, 1),
+                record(BookmarkScopeKind.BRANCH, 2).copy(repositoryRootUrl = "file:///a", branchName = "main"),
+                record(BookmarkScopeKind.BRANCH, 3).copy(repositoryRootUrl = "file:///b", branchName = "feature"),
+                record(BookmarkScopeKind.BRANCH, 4).copy(repositoryRootUrl = "file:///b", branchName = "main"),
+            )
+        val context =
+            BookmarkContextSnapshot(
+                branches = setOf(BranchKey("file:///a", "main"), BranchKey("file:///b", "feature")),
+            )
 
         assertEquals(listOf("1", "2", "3"), BookmarkVisibilityPolicy.visible(records, context).map { it.id })
     }
 
-    private fun record(scope: BookmarkScopeKind, order: Long = 0) = BookmarkRecord(
+    private fun record(
+        scope: BookmarkScopeKind,
+        order: Long = 0,
+    ) = BookmarkRecord(
         id = order.toString(),
         scopeKind = scope,
         order = order,

@@ -5,7 +5,10 @@ import me.a1i.contextualbookmarks.model.LocationSignature
 import me.a1i.contextualbookmarks.model.LocationSignatures
 
 object DocumentLocationSignatures {
-    fun fromDocument(document: Document, line: Int): LocationSignature {
+    fun fromDocument(
+        document: Document,
+        line: Int,
+    ): LocationSignature {
         if (line !in 0 until document.lineCount) return LocationSignature()
         return LocationSignature(
             currentLineHash = hashLine(document, line),
@@ -14,11 +17,16 @@ object DocumentLocationSignatures {
         )
     }
 
-    private fun hashLine(document: Document, line: Int): String {
-        val text = document.charsSequence.subSequence(
-            document.getLineStartOffset(line),
-            document.getLineEndOffset(line),
-        ).toString()
+    private fun hashLine(
+        document: Document,
+        line: Int,
+    ): String {
+        val text =
+            document.charsSequence
+                .subSequence(
+                    document.getLineStartOffset(line),
+                    document.getLineEndOffset(line),
+                ).toString()
         return LocationSignatures.hash(text)
     }
 }

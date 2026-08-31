@@ -12,28 +12,31 @@ import me.a1i.contextualbookmarks.service.CreateBookmarkRequest
 
 class RelativeBookmarkActionPlatformTest : BasePlatformTestCase() {
     fun testUsesTrackedLinesAfterUnsavedDocumentEdit() {
-        val psiFile = myFixture.configureByText(
-            "relative.txt",
-            "head\nfirst\nbetween\nsecond\ntail",
-        )
+        val psiFile =
+            myFixture.configureByText(
+                "relative.txt",
+                "head\nfirst\nbetween\nsecond\ntail",
+            )
         val document = myFixture.editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val first = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 1,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = DocumentLocationSignatures.fromDocument(document, 1),
-            ),
-        ) as BookmarkOperationResult.Created
-        val second = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 3,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = DocumentLocationSignatures.fromDocument(document, 3),
-            ),
-        ) as BookmarkOperationResult.Created
+        val first =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 1,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = DocumentLocationSignatures.fromDocument(document, 1),
+                ),
+            ) as BookmarkOperationResult.Created
+        val second =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 3,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = DocumentLocationSignatures.fromDocument(document, 3),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = project.service<BookmarkPositionTracker>()
         tracker.start()
         tracker.refreshNow()
@@ -43,13 +46,14 @@ class RelativeBookmarkActionPlatformTest : BasePlatformTestCase() {
         }
         assertEquals(3, manager.allBookmarks().single { it.id == second.record.id }.line)
 
-        val selected = relativeBookmarkForNavigation(
-            project = project,
-            fileUrl = psiFile.virtualFile.url,
-            line = 4,
-            column = 0,
-            forward = true,
-        )
+        val selected =
+            relativeBookmarkForNavigation(
+                project = project,
+                fileUrl = psiFile.virtualFile.url,
+                line = 4,
+                column = 0,
+                forward = true,
+            )
 
         assertEquals(second.record.id, selected?.id)
         assertEquals(5, manager.allBookmarks().single { it.id == second.record.id }.line)

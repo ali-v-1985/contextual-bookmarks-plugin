@@ -46,7 +46,10 @@ data class LocationSignature(
 }
 
 object LocationSignatures {
-    fun fromLines(lines: List<String>, line: Int): LocationSignature {
+    fun fromLines(
+        lines: List<String>,
+        line: Int,
+    ): LocationSignature {
         if (line !in lines.indices) return LocationSignature()
         return LocationSignature(
             currentLineHash = hash(lines[line]),
@@ -64,9 +67,19 @@ object LocationSignatures {
 
 sealed interface BookmarkScopeKey {
     data object Global : BookmarkScopeKey
-    data class Branch(val key: BranchKey) : BookmarkScopeKey
-    data class Changelist(val id: String) : BookmarkScopeKey
-    data class Incomplete(val kind: BookmarkScopeKind, val discriminator: String) : BookmarkScopeKey
+
+    data class Branch(
+        val key: BranchKey,
+    ) : BookmarkScopeKey
+
+    data class Changelist(
+        val id: String,
+    ) : BookmarkScopeKey
+
+    data class Incomplete(
+        val kind: BookmarkScopeKind,
+        val discriminator: String,
+    ) : BookmarkScopeKey
 }
 
 data class BookmarkRecord(
@@ -90,16 +103,25 @@ data class BookmarkRecord(
     fun signature(): LocationSignature = LocationSignature(currentLineHash, previousLineHash, nextLineHash)
 
     fun exactScopeKey(): BookmarkScopeKey = when (scopeKind) {
-        BookmarkScopeKind.GLOBAL -> BookmarkScopeKey.Global
+        BookmarkScopeKind.GLOBAL -> {
+            BookmarkScopeKey.Global
+        }
+
         BookmarkScopeKind.BRANCH -> {
             val root = repositoryRootUrl
             val branch = branchName
-            if (root != null && branch != null) BookmarkScopeKey.Branch(BranchKey(root, branch))
-            else BookmarkScopeKey.Incomplete(scopeKind, listOfNotNull(root, branch).joinToString("\u0000"))
+            if (root != null && branch != null) {
+                BookmarkScopeKey.Branch(BranchKey(root, branch))
+            } else {
+                BookmarkScopeKey.Incomplete(scopeKind, listOfNotNull(root, branch).joinToString("\u0000"))
+            }
         }
-        BookmarkScopeKind.CHANGELIST -> changelistId
-            ?.let { BookmarkScopeKey.Changelist(it) }
-            ?: BookmarkScopeKey.Incomplete(scopeKind, changelistName.orEmpty())
+
+        BookmarkScopeKind.CHANGELIST -> {
+            changelistId
+                ?.let { BookmarkScopeKey.Changelist(it) }
+                ?: BookmarkScopeKey.Incomplete(scopeKind, changelistName.orEmpty())
+        }
     }
 }
 

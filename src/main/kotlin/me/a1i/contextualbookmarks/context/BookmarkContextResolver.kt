@@ -16,11 +16,15 @@ data class RepositoryContext(
 
 interface BookmarkContextSource {
     fun repositories(): Collection<RepositoryContext>
+
     fun repositoryForFile(file: VirtualFile): RepositoryContext?
+
     fun activeChangelist(): ChangelistKey?
 }
 
-private class IdeaBookmarkContextSource(private val project: Project) : BookmarkContextSource {
+private class IdeaBookmarkContextSource(
+    private val project: Project,
+) : BookmarkContextSource {
     private val repositoryManager by lazy { VcsRepositoryManager.getInstance(project) }
     private val changeLists by lazy { ChangeListManager.getInstance(project) }
 
@@ -28,10 +32,9 @@ private class IdeaBookmarkContextSource(private val project: Project) : Bookmark
         RepositoryContext(it.root.url, it.currentBranchName)
     }
 
-    override fun repositoryForFile(file: VirtualFile): RepositoryContext? =
-        repositoryManager.getRepositoryForFileQuick(file)?.let {
-            RepositoryContext(it.root.url, it.currentBranchName)
-        }
+    override fun repositoryForFile(file: VirtualFile): RepositoryContext? = repositoryManager.getRepositoryForFileQuick(file)?.let {
+        RepositoryContext(it.root.url, it.currentBranchName)
+    }
 
     override fun activeChangelist(): ChangelistKey? {
         if (!changeLists.areChangeListsEnabled()) return null
@@ -43,11 +46,14 @@ private class IdeaBookmarkContextSource(private val project: Project) : Bookmark
 
 internal interface BookmarkContextAccess {
     fun snapshot(): BookmarkContextSnapshot
+
     fun refresh(): BookmarkContextSnapshot
 }
 
 @Service(Service.Level.PROJECT)
-class BookmarkContextResolver(private val project: Project) {
+class BookmarkContextResolver(
+    private val project: Project,
+) {
     private val core by lazy { BookmarkContextResolverCore(IdeaBookmarkContextSource(project)) }
 
     internal val access: BookmarkContextAccess
@@ -65,7 +71,6 @@ class BookmarkContextResolver(private val project: Project) {
 internal class BookmarkContextResolverCore(
     private val source: BookmarkContextSource,
 ) : BookmarkContextAccess {
-
     @Volatile
     private var currentSnapshot: BookmarkContextSnapshot = readSnapshot()
 
@@ -81,7 +86,8 @@ internal class BookmarkContextResolverCore(
     fun activeChangelist(): ChangelistKey? = source.activeChangelist()
 
     private fun readSnapshot(): BookmarkContextSnapshot = BookmarkContextSnapshot(
-        branches = source.repositories().mapNotNullTo(linkedSetOf()) {
+        branches =
+        source.repositories().mapNotNullTo(linkedSetOf()) {
             val branch = it.branchName ?: return@mapNotNullTo null
             BranchKey(it.rootUrl, branch)
         },

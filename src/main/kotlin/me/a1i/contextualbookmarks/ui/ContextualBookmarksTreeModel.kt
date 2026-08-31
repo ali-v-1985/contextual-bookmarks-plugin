@@ -24,9 +24,14 @@ object ContextualBookmarksTreeModel {
         val root = BookmarkTreeNode("Contextual Bookmarks")
         val visibleIds = BookmarkVisibilityPolicy.visible(records, context).mapTo(hashSetOf()) { it.id }
         val included = if (activeOnly) records.filter { it.id in visibleIds } else records
-        val unavailableVisibleIds = if (activeOnly) emptySet() else included
-            .filter { it.id in visibleIds && it.locationStatus != BookmarkLocationStatus.AVAILABLE }
-            .mapTo(hashSetOf()) { it.id }
+        val unavailableVisibleIds =
+            if (activeOnly) {
+                emptySet()
+            } else {
+                included
+                    .filter { it.id in visibleIds && it.locationStatus != BookmarkLocationStatus.AVAILABLE }
+                    .mapTo(hashSetOf()) { it.id }
+            }
         val scoped = included.filter { it.id !in unavailableVisibleIds }
 
         addGroup(root, "Global", scoped.filter { it.scopeKind == BookmarkScopeKind.GLOBAL })
@@ -57,7 +62,11 @@ object ContextualBookmarksTreeModel {
         return DefaultTreeModel(root)
     }
 
-    private fun addGroup(root: BookmarkTreeNode, name: String, records: List<BookmarkRecord>) {
+    private fun addGroup(
+        root: BookmarkTreeNode,
+        name: String,
+        records: List<BookmarkRecord>,
+    ) {
         if (records.isEmpty()) return
         val group = BookmarkTreeNode(name)
         records.sortedWith(compareBy(BookmarkRecord::order, BookmarkRecord::id)).forEach { record ->

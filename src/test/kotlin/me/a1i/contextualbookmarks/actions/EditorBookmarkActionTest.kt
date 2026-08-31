@@ -13,27 +13,31 @@ import me.a1i.contextualbookmarks.service.ContextualBookmarkManager
 
 class EditorBookmarkActionTest : BasePlatformTestCase() {
     fun testCreatesBookmarkAtRightClickedGutterLine() {
-        val psiFile = myFixture.configureByText(
-            "gutter.txt",
-            "caret line\nother line\nclicked line",
-        )
+        val psiFile =
+            myFixture.configureByText(
+                "gutter.txt",
+                "caret line\nother line\nclicked line",
+            )
         val editor = myFixture.editor
         editor.caretModel.moveToLogicalPosition(LogicalPosition(0, 4))
-        val dataContext = SimpleDataContext.builder()
-            .add(CommonDataKeys.PROJECT, project)
-            .add(CommonDataKeys.EDITOR, editor)
-            .add(CommonDataKeys.VIRTUAL_FILE, psiFile.virtualFile)
-            .add(EditorGutterComponentEx.LOGICAL_LINE_AT_CURSOR, 2)
-            .build()
+        val dataContext =
+            SimpleDataContext
+                .builder()
+                .add(CommonDataKeys.PROJECT, project)
+                .add(CommonDataKeys.EDITOR, editor)
+                .add(CommonDataKeys.VIRTUAL_FILE, psiFile.virtualFile)
+                .add(EditorGutterComponentEx.LOGICAL_LINE_AT_CURSOR, 2)
+                .build()
         val action = AddGlobalBookmarkAction()
-        val event = AnActionEvent.createEvent(
-            action,
-            dataContext,
-            action.templatePresentation.clone(),
-            ActionPlaces.EDITOR_GUTTER_POPUP,
-            ActionUiKind.POPUP,
-            null,
-        )
+        val event =
+            AnActionEvent.createEvent(
+                action,
+                dataContext,
+                action.templatePresentation.clone(),
+                ActionPlaces.EDITOR_GUTTER_POPUP,
+                ActionUiKind.POPUP,
+                null,
+            )
 
         action.actionPerformed(event)
 

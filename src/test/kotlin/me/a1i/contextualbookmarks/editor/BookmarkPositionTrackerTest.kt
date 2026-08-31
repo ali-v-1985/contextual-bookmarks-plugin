@@ -21,15 +21,16 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val psiFile = myFixture.configureByText("point-anchor.txt", "target")
         val document = myFixture.editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 0,
-                column = 2,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = DocumentLocationSignatures.fromDocument(document, 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 0,
+                    column = 2,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = DocumentLocationSignatures.fromDocument(document, 0),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = BookmarkPositionTracker(project)
         try {
             tracker.start()
@@ -53,23 +54,25 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val psiFile = myFixture.configureByText("live-collision.txt", "occupied\nother")
         val document = myFixture.editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val occupied = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 0,
-                column = 1,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = DocumentLocationSignatures.fromDocument(document, 0),
-            ),
-        ) as BookmarkOperationResult.Created
-        val relocating = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 1,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = LocationSignatures.fromLines(listOf("occupied"), 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val occupied =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 0,
+                    column = 1,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = DocumentLocationSignatures.fromDocument(document, 0),
+                ),
+            ) as BookmarkOperationResult.Created
+        val relocating =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 1,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = LocationSignatures.fromLines(listOf("occupied"), 0),
+                ),
+            ) as BookmarkOperationResult.Created
         manager.updateLocationStatus(relocating.record.id, BookmarkLocationStatus.MISSING)
         val tracker = project.service<BookmarkPositionTracker>()
         tracker.start()
@@ -81,9 +84,11 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         assertEquals(2, tracker.livePosition(occupied.record.id)?.line)
         assertEquals(0, manager.allBookmarks().single { it.id == occupied.record.id }.line)
 
-        val result = project.service<BookmarkNavigator>()
-            .navigate(relocating.record)
-            .get(10, TimeUnit.SECONDS)
+        val result =
+            project
+                .service<BookmarkNavigator>()
+                .navigate(relocating.record)
+                .get(10, TimeUnit.SECONDS)
 
         assertTrue(result is BookmarkLocationResult.Ambiguous)
         val records = manager.allBookmarks().associateBy { it.id }
@@ -94,14 +99,15 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
     }
 
     fun testBranchSwitchDoesNotSnapshotMarkerAfterScopeBecomesInvisible() {
-        val branchRecord = BookmarkRecord(
-            id = "branch",
-            fileUrl = "file:///repo/file.txt",
-            line = 4,
-            scopeKind = BookmarkScopeKind.BRANCH,
-            repositoryRootUrl = "file:///repo",
-            branchName = "main",
-        )
+        val branchRecord =
+            BookmarkRecord(
+                id = "branch",
+                fileUrl = "file:///repo/file.txt",
+                line = 4,
+                scopeKind = BookmarkScopeKind.BRANCH,
+                repositoryRootUrl = "file:///repo",
+                branchName = "main",
+            )
 
         assertTrue(shouldSnapshotTrackedPosition(branchRecord, branchRecord, persistedLocationChanged = false))
         assertFalse(shouldSnapshotTrackedPosition(branchRecord, visibleRecord = null, persistedLocationChanged = false))
@@ -111,27 +117,29 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val psiFile = myFixture.configureByText("relink.txt", "first\nmiddle\nlast")
         val document = myFixture.editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 0,
-                column = 1,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = DocumentLocationSignatures.fromDocument(document, 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 0,
+                    column = 1,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = DocumentLocationSignatures.fromDocument(document, 0),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = BookmarkPositionTracker(project)
         try {
             tracker.start()
             tracker.refreshNow()
 
-            val relinked = manager.relink(
-                id = created.record.id,
-                fileUrl = psiFile.virtualFile.url,
-                line = 2,
-                column = 2,
-                signature = DocumentLocationSignatures.fromDocument(document, 2),
-            )
+            val relinked =
+                manager.relink(
+                    id = created.record.id,
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 2,
+                    column = 2,
+                    signature = DocumentLocationSignatures.fromDocument(document, 2),
+                )
             assertTrue(relinked is BookmarkOperationResult.Updated)
             tracker.refreshNow()
 
@@ -150,22 +158,24 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val psiFile = myFixture.configureByText("collision.txt", "occupied\ninserted\ntarget")
         val document = myFixture.editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val occupied = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 2,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = DocumentLocationSignatures.fromDocument(document, 2),
-            ),
-        ) as BookmarkOperationResult.Created
-        val relocating = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 1,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = LocationSignatures.fromLines(listOf("target"), 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val occupied =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 2,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = DocumentLocationSignatures.fromDocument(document, 2),
+                ),
+            ) as BookmarkOperationResult.Created
+        val relocating =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 1,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = LocationSignatures.fromLines(listOf("target"), 0),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = BookmarkPositionTracker(project)
         try {
             tracker.start()
@@ -192,19 +202,22 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
                 signature = DocumentLocationSignatures.fromDocument(document, 2),
             ),
         )
-        val relocating = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 1,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = LocationSignatures.fromLines(listOf("target"), 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val relocating =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 1,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = LocationSignatures.fromLines(listOf("target"), 0),
+                ),
+            ) as BookmarkOperationResult.Created
         myFixture.editor.caretModel.moveToLogicalPosition(LogicalPosition(0, 0))
 
-        val result = project.service<BookmarkNavigator>()
-            .navigate(relocating.record)
-            .get(10, TimeUnit.SECONDS)
+        val result =
+            project
+                .service<BookmarkNavigator>()
+                .navigate(relocating.record)
+                .get(10, TimeUnit.SECONDS)
 
         assertTrue(result is BookmarkLocationResult.Ambiguous)
         assertEquals(0, myFixture.editor.caretModel.logicalPosition.line)
@@ -217,15 +230,16 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val psiFile = myFixture.configureByText("closed.txt", "target\nnext")
         val document = myFixture.editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 0,
-                column = 2,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 0,
+                    column = 2,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = BookmarkPositionTracker(project)
         try {
             tracker.start()
@@ -250,13 +264,14 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
     fun testTracksUnsignedRecordWhenPersistedLineIsInRange() {
         val psiFile = myFixture.configureByText("unsigned.txt", "first\ntarget\nlast")
         val manager = project.service<ContextualBookmarkManager>()
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 1,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 1,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = BookmarkPositionTracker(project)
         try {
             tracker.start()
@@ -277,15 +292,16 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val psiFile = myFixture.configureByText("before.txt", "target\nnext")
         val document = myFixture.editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 0,
-                column = 2,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 0,
+                    column = 2,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = project.service<BookmarkPositionTracker>()
         tracker.start()
         tracker.refreshNow()
@@ -297,9 +313,11 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val persistedBeforeNavigation = manager.allBookmarks().single { it.id == created.record.id }
         assertEquals(created.record.fileUrl, persistedBeforeNavigation.fileUrl)
 
-        val result = project.service<BookmarkNavigator>()
-            .navigate(persistedBeforeNavigation)
-            .get(10, TimeUnit.SECONDS)
+        val result =
+            project
+                .service<BookmarkNavigator>()
+                .navigate(persistedBeforeNavigation)
+                .get(10, TimeUnit.SECONDS)
 
         assertTrue(result is BookmarkLocationResult.Live)
         val persisted = manager.allBookmarks().single { it.id == created.record.id }
@@ -310,15 +328,16 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
     fun testRelocatesPersistedSignatureBeforeCreatingLiveMarker() {
         val psiFile = myFixture.configureByText("relocated.txt", "inserted\ntarget\nnext")
         val manager = project.service<ContextualBookmarkManager>()
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 0,
-                column = 2,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 0,
+                    column = 2,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = BookmarkPositionTracker(project)
         try {
             tracker.start()
@@ -338,15 +357,16 @@ class BookmarkPositionTrackerTest : BasePlatformTestCase() {
         val editor = myFixture.editor
         val document = editor.document
         val manager = project.service<ContextualBookmarkManager>()
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = psiFile.virtualFile.url,
-                line = 0,
-                column = 2,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-                signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = psiFile.virtualFile.url,
+                    line = 0,
+                    column = 2,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                    signature = LocationSignatures.fromLines(listOf("target", "next"), 0),
+                ),
+            ) as BookmarkOperationResult.Created
         val tracker = BookmarkPositionTracker(project)
         try {
             tracker.start()

@@ -10,14 +10,15 @@ class MnemonicChooserPopupTest : BasePlatformTestCase() {
     fun testExistingMnemonicIsPrefilledAndBlankInputClearsIt() {
         val manager = project.getService(ContextualBookmarkManager::class.java)
         manager.delete(manager.allBookmarks().map { it.id })
-        val created = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = "file:///mnemonic.kt",
-                line = 3,
-                mnemonic = "B",
-                scopeKind = BookmarkScopeKind.GLOBAL,
-            ),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = "file:///mnemonic.kt",
+                    line = 3,
+                    mnemonic = "B",
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                ),
+            ) as BookmarkOperationResult.Created
         var initialValue: String? = null
         var result: BookmarkOperationResult? = null
 

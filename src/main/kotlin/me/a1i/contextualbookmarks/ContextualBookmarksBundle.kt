@@ -7,7 +7,6 @@ import org.jetbrains.annotations.PropertyKey
 private const val BUNDLE = "messages.ContextualBookmarksBundle"
 
 object ContextualBookmarksBundle : DynamicBundle(BUNDLE) {
-
     @JvmStatic
     @Nls
     fun message(

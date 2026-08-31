@@ -47,20 +47,48 @@ data class CreateBookmarkRequest(
 )
 
 sealed interface BookmarkOperationResult {
-    data class Created(val record: BookmarkRecord) : BookmarkOperationResult
-    data class Removed(val records: List<BookmarkRecord>) : BookmarkOperationResult
-    data class Updated(val record: BookmarkRecord) : BookmarkOperationResult
-    data class StaleLocation(val record: BookmarkRecord) : BookmarkOperationResult
-    data class MnemonicConflict(val mnemonic: String, val records: List<BookmarkRecord>) : BookmarkOperationResult
-    data class DuplicateLocation(val record: BookmarkRecord) : BookmarkOperationResult
-    data class ScopeUnavailable(val scopeKind: BookmarkScopeKind) : BookmarkOperationResult
-    data class AmbiguousToggle(val records: List<BookmarkRecord>) : BookmarkOperationResult
+    data class Created(
+        val record: BookmarkRecord,
+    ) : BookmarkOperationResult
+
+    data class Removed(
+        val records: List<BookmarkRecord>,
+    ) : BookmarkOperationResult
+
+    data class Updated(
+        val record: BookmarkRecord,
+    ) : BookmarkOperationResult
+
+    data class StaleLocation(
+        val record: BookmarkRecord,
+    ) : BookmarkOperationResult
+
+    data class MnemonicConflict(
+        val mnemonic: String,
+        val records: List<BookmarkRecord>,
+    ) : BookmarkOperationResult
+
+    data class DuplicateLocation(
+        val record: BookmarkRecord,
+    ) : BookmarkOperationResult
+
+    data class ScopeUnavailable(
+        val scopeKind: BookmarkScopeKind,
+    ) : BookmarkOperationResult
+
+    data class AmbiguousToggle(
+        val records: List<BookmarkRecord>,
+    ) : BookmarkOperationResult
+
     data object ReadOnly : BookmarkOperationResult
+
     data object NotFound : BookmarkOperationResult
 }
 
 @Service(Service.Level.PROJECT)
-class ContextualBookmarkManager(private val project: Project) {
+class ContextualBookmarkManager(
+    private val project: Project,
+) {
     private val core by lazy {
         ContextualBookmarkManagerCore(
             stateService = project.service(),
@@ -84,8 +112,11 @@ class ContextualBookmarkManager(private val project: Project) {
 
     fun toggle(request: CreateBookmarkRequest): BookmarkOperationResult = core.toggle(request)
 
-    fun edit(id: String, description: String?, mnemonic: String?): BookmarkOperationResult =
-        core.edit(id, description, mnemonic)
+    fun edit(
+        id: String,
+        description: String?,
+        mnemonic: String?,
+    ): BookmarkOperationResult = core.edit(id, description, mnemonic)
 
     fun delete(ids: Collection<String>): BookmarkOperationResult = core.delete(ids)
 
@@ -116,8 +147,10 @@ class ContextualBookmarkManager(private val project: Project) {
         signature: LocationSignature,
     ): BookmarkOperationResult = core.relink(id, fileUrl, line, column, signature)
 
-    fun updateLocationStatus(id: String, status: BookmarkLocationStatus): BookmarkOperationResult =
-        core.updateLocationStatus(id, status)
+    fun updateLocationStatus(
+        id: String,
+        status: BookmarkLocationStatus,
+    ): BookmarkOperationResult = core.updateLocationStatus(id, status)
 
     internal fun updateLocationStatusIfUnchanged(
         expectedLocation: BookmarkRecord,
@@ -130,13 +163,21 @@ class ContextualBookmarkManager(private val project: Project) {
 
     fun updateLocations(updatedRecords: Collection<BookmarkRecord>) = core.updateLocations(updatedRecords)
 
-    fun handleBranchRename(rootUrl: String, oldName: String, newName: String) =
-        core.handleBranchRename(rootUrl, oldName, newName)
+    fun handleBranchRename(
+        rootUrl: String,
+        oldName: String,
+        newName: String,
+    ) = core.handleBranchRename(rootUrl, oldName, newName)
 
-    fun resolveMnemonic(mnemonic: String?, activeEditorRootUrl: String? = null): MnemonicResolution =
-        core.resolveMnemonic(mnemonic, activeEditorRootUrl)
+    fun resolveMnemonic(
+        mnemonic: String?,
+        activeEditorRootUrl: String? = null,
+    ): MnemonicResolution = core.resolveMnemonic(mnemonic, activeEditorRootUrl)
 
-    fun addListener(parent: Disposable, listener: () -> Unit) = core.addListener(parent, listener)
+    fun addListener(
+        parent: Disposable,
+        listener: () -> Unit,
+    ) = core.addListener(parent, listener)
 
     fun addLivePositionProvider(
         parent: Disposable,
@@ -162,7 +203,9 @@ internal class ContextualBookmarkManagerCore(
     @Volatile
     private var context: BookmarkContextSnapshot = contextResolver.snapshot()
 
-    fun allBookmarks(): List<BookmarkRecord> = stateService.snapshot().bookmarks
+    fun allBookmarks(): List<BookmarkRecord> = stateService
+        .snapshot()
+        .bookmarks
         .sortedWith(compareBy(BookmarkRecord::order, BookmarkRecord::id))
 
     fun visibleBookmarks(): List<BookmarkRecord> = BookmarkVisibilityPolicy.visible(allBookmarks(), context)
@@ -198,39 +241,42 @@ internal class ContextualBookmarkManagerCore(
         var created: BookmarkRecord? = null
         var duplicate: BookmarkRecord? = null
         var conflict: List<BookmarkRecord> = emptyList()
-        val stateUpdate = stateService.updateState { state ->
-            val candidate = BookmarkRecord(
-                id = UUID.randomUUID().toString(),
-                fileUrl = request.fileUrl,
-                line = request.line.coerceAtLeast(0),
-                column = request.column.coerceAtLeast(0),
-                mnemonic = normalizedMnemonic,
-                description = request.description,
-                currentLineHash = request.signature.currentLineHash,
-                previousLineHash = request.signature.previousLineHash,
-                nextLineHash = request.signature.nextLineHash,
-                scopeKind = scopeKind,
-                repositoryRootUrl = scopeRecord.repositoryRootUrl,
-                branchName = scopeRecord.branchName,
-                changelistId = scopeRecord.changelistId,
-                changelistName = scopeRecord.changelistName,
-                order = state.nextOrder,
-            )
-            duplicate = duplicateLocation(state.bookmarks, candidate)
-            if (duplicate == null) {
-                conflict = MnemonicPolicy.sameScopeConflicts(
-                    state.bookmarks,
-                    candidate.mnemonic,
-                    candidate.exactScopeKey(),
-                )
+        val stateUpdate =
+            stateService.updateState { state ->
+                val candidate =
+                    BookmarkRecord(
+                        id = UUID.randomUUID().toString(),
+                        fileUrl = request.fileUrl,
+                        line = request.line.coerceAtLeast(0),
+                        column = request.column.coerceAtLeast(0),
+                        mnemonic = normalizedMnemonic,
+                        description = request.description,
+                        currentLineHash = request.signature.currentLineHash,
+                        previousLineHash = request.signature.previousLineHash,
+                        nextLineHash = request.signature.nextLineHash,
+                        scopeKind = scopeKind,
+                        repositoryRootUrl = scopeRecord.repositoryRootUrl,
+                        branchName = scopeRecord.branchName,
+                        changelistId = scopeRecord.changelistId,
+                        changelistName = scopeRecord.changelistName,
+                        order = state.nextOrder,
+                    )
+                duplicate = duplicateLocation(state.bookmarks, candidate)
+                if (duplicate == null) {
+                    conflict =
+                        MnemonicPolicy.sameScopeConflicts(
+                            state.bookmarks,
+                            candidate.mnemonic,
+                            candidate.exactScopeKey(),
+                        )
+                }
+                if (duplicate == null && conflict.isEmpty()) {
+                    state.bookmarks += candidate
+                    state.nextOrder++
+                    created = candidate
+                }
+                state
             }
-            if (duplicate == null && conflict.isEmpty()) {
-                state.bookmarks += candidate
-                state.nextOrder++
-                created = candidate
-            }
-            state
-        }
         if (!stateUpdate.accepted) return BookmarkOperationResult.ReadOnly
         duplicate?.let { return BookmarkOperationResult.DuplicateLocation(it.copy()) }
         if (conflict.isNotEmpty()) return BookmarkOperationResult.MnemonicConflict(normalizedMnemonic!!, conflict)
@@ -245,42 +291,54 @@ internal class ContextualBookmarkManagerCore(
         val scopeKind = request.scopeKind ?: preferredScope()
         val scopeRecord = scopeRecord(scopeKind, request.context) ?: return BookmarkOperationResult.ScopeUnavailable(scopeKind)
         val scopeKey = scopeRecord.exactScopeKey()
-        val matches = allBookmarks().filter {
-            val livePosition = livePositionProvider?.invoke(it.id)
-            val fileUrl = livePosition?.fileUrl ?: it.fileUrl
-            val line = livePosition?.line ?: it.line
-            fileUrl == request.fileUrl && line == request.line.coerceAtLeast(0) && it.exactScopeKey() == scopeKey
-        }
+        val matches =
+            allBookmarks().filter {
+                val livePosition = livePositionProvider?.invoke(it.id)
+                val fileUrl = livePosition?.fileUrl ?: it.fileUrl
+                val line = livePosition?.line ?: it.line
+                fileUrl == request.fileUrl && line == request.line.coerceAtLeast(0) && it.exactScopeKey() == scopeKey
+            }
         return when (matches.size) {
-            0 -> create(request.copy(scopeKind = scopeKind))
+            0 -> {
+                create(request.copy(scopeKind = scopeKind))
+            }
+
             1 -> {
                 val update = stateService.updateBookmarks { records -> records.removeAll { it.id == matches.single().id } }
                 if (!update.accepted) return BookmarkOperationResult.ReadOnly
                 notifyChanged()
                 BookmarkOperationResult.Removed(matches)
             }
-            else -> BookmarkOperationResult.AmbiguousToggle(matches)
+
+            else -> {
+                BookmarkOperationResult.AmbiguousToggle(matches)
+            }
         }
     }
 
-    fun edit(id: String, description: String?, mnemonic: String?): BookmarkOperationResult {
+    fun edit(
+        id: String,
+        description: String?,
+        mnemonic: String?,
+    ): BookmarkOperationResult {
         if (stateService.isReadOnlyForFutureSchema()) return BookmarkOperationResult.ReadOnly
         val normalized = MnemonicPolicy.normalize(mnemonic)
         if (mnemonic != null && normalized == null) return BookmarkOperationResult.MnemonicConflict(mnemonic, emptyList())
         var updated: BookmarkRecord? = null
         var conflict: List<BookmarkRecord> = emptyList()
-        val stateUpdate = stateService.updateState { state ->
-            val index = state.bookmarks.indexOfFirst { it.id == id }
-            if (index < 0) return@updateState state
-            val original = state.bookmarks[index]
-            conflict = MnemonicPolicy.sameScopeConflicts(state.bookmarks, normalized, original.exactScopeKey(), id)
-            if (conflict.isEmpty()) {
-                val replacement = original.copy(description = description, mnemonic = normalized)
-                state.bookmarks[index] = replacement
-                updated = replacement
+        val stateUpdate =
+            stateService.updateState { state ->
+                val index = state.bookmarks.indexOfFirst { it.id == id }
+                if (index < 0) return@updateState state
+                val original = state.bookmarks[index]
+                conflict = MnemonicPolicy.sameScopeConflicts(state.bookmarks, normalized, original.exactScopeKey(), id)
+                if (conflict.isEmpty()) {
+                    val replacement = original.copy(description = description, mnemonic = normalized)
+                    state.bookmarks[index] = replacement
+                    updated = replacement
+                }
+                state
             }
-            state
-        }
         if (!stateUpdate.accepted) return BookmarkOperationResult.ReadOnly
         if (conflict.isNotEmpty()) return BookmarkOperationResult.MnemonicConflict(normalized!!, conflict)
         val updatedId = updated?.id ?: return BookmarkOperationResult.NotFound
@@ -310,33 +368,36 @@ internal class ContextualBookmarkManagerCore(
         var duplicate: BookmarkRecord? = null
         var conflict: List<BookmarkRecord> = emptyList()
         var candidateMnemonic: String? = null
-        val stateUpdate = stateService.updateState { state ->
-            val index = state.bookmarks.indexOfFirst { it.id == id }
-            if (index < 0) return@updateState state
-            val original = state.bookmarks[index]
-            val candidate = original.copy(
-                scopeKind = scopeKind,
-                repositoryRootUrl = scopeRecord.repositoryRootUrl,
-                branchName = scopeRecord.branchName,
-                changelistId = scopeRecord.changelistId,
-                changelistName = scopeRecord.changelistName,
-            )
-            candidateMnemonic = candidate.mnemonic
-            duplicate = duplicateLocation(state.bookmarks, candidate, id)
-            if (duplicate == null) {
-                conflict = MnemonicPolicy.sameScopeConflicts(
-                    state.bookmarks,
-                    candidate.mnemonic,
-                    candidate.exactScopeKey(),
-                    id,
-                )
+        val stateUpdate =
+            stateService.updateState { state ->
+                val index = state.bookmarks.indexOfFirst { it.id == id }
+                if (index < 0) return@updateState state
+                val original = state.bookmarks[index]
+                val candidate =
+                    original.copy(
+                        scopeKind = scopeKind,
+                        repositoryRootUrl = scopeRecord.repositoryRootUrl,
+                        branchName = scopeRecord.branchName,
+                        changelistId = scopeRecord.changelistId,
+                        changelistName = scopeRecord.changelistName,
+                    )
+                candidateMnemonic = candidate.mnemonic
+                duplicate = duplicateLocation(state.bookmarks, candidate, id)
+                if (duplicate == null) {
+                    conflict =
+                        MnemonicPolicy.sameScopeConflicts(
+                            state.bookmarks,
+                            candidate.mnemonic,
+                            candidate.exactScopeKey(),
+                            id,
+                        )
+                }
+                if (duplicate == null && conflict.isEmpty()) {
+                    state.bookmarks[index] = candidate
+                    updated = candidate
+                }
+                state
             }
-            if (duplicate == null && conflict.isEmpty()) {
-                state.bookmarks[index] = candidate
-                updated = candidate
-            }
-            state
-        }
         if (!stateUpdate.accepted) return BookmarkOperationResult.ReadOnly
         duplicate?.let { return BookmarkOperationResult.DuplicateLocation(it.copy()) }
         if (conflict.isNotEmpty()) return BookmarkOperationResult.MnemonicConflict(candidateMnemonic.orEmpty(), conflict)
@@ -355,31 +416,38 @@ internal class ContextualBookmarkManagerCore(
         var merged: BookmarkRecord? = null
         var duplicate: BookmarkRecord? = null
         var stale: BookmarkRecord? = null
-        val stateUpdate = stateService.updateState { state ->
-            val index = state.bookmarks.indexOfFirst { it.id == updated.id }
-            if (index >= 0) {
-                val original = state.bookmarks[index]
-                if (expectedLocation != null && !original.hasSameLocationAs(expectedLocation)) {
-                    stale = original
-                    return@updateState state
+        val stateUpdate =
+            stateService.updateState { state ->
+                val index = state.bookmarks.indexOfFirst { it.id == updated.id }
+                if (index >= 0) {
+                    val original = state.bookmarks[index]
+                    if (expectedLocation != null && !original.hasSameLocationAs(expectedLocation)) {
+                        stale = original
+                        return@updateState state
+                    }
+                    val candidate = original.mergeLocationFrom(updated)
+                    duplicate =
+                        duplicateLocation(
+                            records = state.bookmarks,
+                            candidate = candidate,
+                            excludedId = candidate.id,
+                            useCandidateLivePosition = false,
+                            useExistingLivePositions = useExistingLivePositions,
+                            existingLivePositions = existingLivePositions,
+                        )
+                    val replacement =
+                        if (duplicate == null) {
+                            candidate
+                        } else {
+                            original.copy(
+                                locationStatus = BookmarkLocationStatus.AMBIGUOUS,
+                            )
+                        }
+                    state.bookmarks[index] = replacement
+                    merged = replacement
                 }
-                val candidate = original.mergeLocationFrom(updated)
-                duplicate = duplicateLocation(
-                    records = state.bookmarks,
-                    candidate = candidate,
-                    excludedId = candidate.id,
-                    useCandidateLivePosition = false,
-                    useExistingLivePositions = useExistingLivePositions,
-                    existingLivePositions = existingLivePositions,
-                )
-                val replacement = if (duplicate == null) candidate else original.copy(
-                    locationStatus = BookmarkLocationStatus.AMBIGUOUS,
-                )
-                state.bookmarks[index] = replacement
-                merged = replacement
+                state
             }
-            state
-        }
         if (!stateUpdate.accepted) return BookmarkOperationResult.ReadOnly
         stale?.let { return BookmarkOperationResult.StaleLocation(it.copy()) }
         val result = merged ?: return BookmarkOperationResult.NotFound
@@ -398,30 +466,33 @@ internal class ContextualBookmarkManagerCore(
         if (stateService.isReadOnlyForFutureSchema()) return BookmarkOperationResult.ReadOnly
         var updated: BookmarkRecord? = null
         var duplicate: BookmarkRecord? = null
-        val stateUpdate = stateService.updateState { state ->
-            val index = state.bookmarks.indexOfFirst { it.id == id }
-            if (index < 0) return@updateState state
-            val candidate = state.bookmarks[index].copy(
-                fileUrl = fileUrl,
-                line = line.coerceAtLeast(0),
-                column = column.coerceAtLeast(0),
-                currentLineHash = signature.currentLineHash,
-                previousLineHash = signature.previousLineHash,
-                nextLineHash = signature.nextLineHash,
-                locationStatus = BookmarkLocationStatus.AVAILABLE,
-            )
-            duplicate = duplicateLocation(
-                records = state.bookmarks,
-                candidate = candidate,
-                excludedId = id,
-                useCandidateLivePosition = false,
-            )
-            if (duplicate == null) {
-                state.bookmarks[index] = candidate
-                updated = candidate
+        val stateUpdate =
+            stateService.updateState { state ->
+                val index = state.bookmarks.indexOfFirst { it.id == id }
+                if (index < 0) return@updateState state
+                val candidate =
+                    state.bookmarks[index].copy(
+                        fileUrl = fileUrl,
+                        line = line.coerceAtLeast(0),
+                        column = column.coerceAtLeast(0),
+                        currentLineHash = signature.currentLineHash,
+                        previousLineHash = signature.previousLineHash,
+                        nextLineHash = signature.nextLineHash,
+                        locationStatus = BookmarkLocationStatus.AVAILABLE,
+                    )
+                duplicate =
+                    duplicateLocation(
+                        records = state.bookmarks,
+                        candidate = candidate,
+                        excludedId = id,
+                        useCandidateLivePosition = false,
+                    )
+                if (duplicate == null) {
+                    state.bookmarks[index] = candidate
+                    updated = candidate
+                }
+                state
             }
-            state
-        }
         if (!stateUpdate.accepted) return BookmarkOperationResult.ReadOnly
         duplicate?.let { return BookmarkOperationResult.DuplicateLocation(it.copy()) }
         val result = updated ?: return BookmarkOperationResult.NotFound
@@ -438,21 +509,22 @@ internal class ContextualBookmarkManagerCore(
         var updated: BookmarkRecord? = null
         var stale: BookmarkRecord? = null
         var changed = false
-        val stateUpdate = stateService.updateState { state ->
-            val index = state.bookmarks.indexOfFirst { it.id == id }
-            if (index >= 0) {
-                val original = state.bookmarks[index]
-                if (expectedLocation != null && !original.hasSameLocationAs(expectedLocation)) {
-                    stale = original
-                    return@updateState state
+        val stateUpdate =
+            stateService.updateState { state ->
+                val index = state.bookmarks.indexOfFirst { it.id == id }
+                if (index >= 0) {
+                    val original = state.bookmarks[index]
+                    if (expectedLocation != null && !original.hasSameLocationAs(expectedLocation)) {
+                        stale = original
+                        return@updateState state
+                    }
+                    val replacement = if (original.locationStatus == status) original else original.copy(locationStatus = status)
+                    state.bookmarks[index] = replacement
+                    updated = replacement
+                    changed = replacement !== original
                 }
-                val replacement = if (original.locationStatus == status) original else original.copy(locationStatus = status)
-                state.bookmarks[index] = replacement
-                updated = replacement
-                changed = replacement !== original
+                state
             }
-            state
-        }
         if (!stateUpdate.accepted) return BookmarkOperationResult.ReadOnly
         stale?.let { return BookmarkOperationResult.StaleLocation(it.copy()) }
         val result = updated ?: return BookmarkOperationResult.NotFound
@@ -464,87 +536,104 @@ internal class ContextualBookmarkManagerCore(
         if (stateService.isReadOnlyForFutureSchema()) return false
         if (updatedRecords.isEmpty()) return true
         val byId = updatedRecords.associateBy { it.id }
-        val stateUpdate = stateService.updateState { state ->
-            val originals = state.bookmarks.associateBy { it.id }
-            val proposed = state.bookmarks.associate { record ->
-                record.id to (byId[record.id]?.let { updated -> record.mergeLocationFrom(updated) } ?: record)
-            }
-            val rejected = mutableSetOf<String>()
-            while (true) {
-                val finalRecords = state.bookmarks.map { original ->
-                    if (original.id in rejected) original else proposed.getValue(original.id)
-                }
-                val newlyRejected = finalRecords
-                    .groupBy(::exactLocationKey)
-                    .values
-                    .asSequence()
-                    .filter { it.size > 1 }
-                    .flatten()
-                    .mapNotNull { record ->
-                        val original = originals.getValue(record.id)
-                        val candidate = proposed.getValue(record.id)
-                        record.id.takeIf {
-                            record.id in byId && record.id !in rejected &&
-                                exactLocationKey(original) != exactLocationKey(candidate)
-                        }
+        val stateUpdate =
+            stateService.updateState { state ->
+                val originals = state.bookmarks.associateBy { it.id }
+                val proposed =
+                    state.bookmarks.associate { record ->
+                        record.id to (byId[record.id]?.let { updated -> record.mergeLocationFrom(updated) } ?: record)
                     }
-                    .toSet()
-                if (newlyRejected.isEmpty()) break
-                rejected += newlyRejected
-            }
-            state.bookmarks.replaceAll { original ->
-                if (original.id in rejected) {
-                    original.copy(locationStatus = BookmarkLocationStatus.AMBIGUOUS)
-                } else {
-                    proposed.getValue(original.id)
+                val rejected = mutableSetOf<String>()
+                while (true) {
+                    val finalRecords =
+                        state.bookmarks.map { original ->
+                            if (original.id in rejected) original else proposed.getValue(original.id)
+                        }
+                    val newlyRejected =
+                        finalRecords
+                            .groupBy(::exactLocationKey)
+                            .values
+                            .asSequence()
+                            .filter { it.size > 1 }
+                            .flatten()
+                            .mapNotNull { record ->
+                                val original = originals.getValue(record.id)
+                                val candidate = proposed.getValue(record.id)
+                                record.id.takeIf {
+                                    record.id in byId && record.id !in rejected &&
+                                        exactLocationKey(original) != exactLocationKey(candidate)
+                                }
+                            }.toSet()
+                    if (newlyRejected.isEmpty()) break
+                    rejected += newlyRejected
                 }
+                state.bookmarks.replaceAll { original ->
+                    if (original.id in rejected) {
+                        original.copy(locationStatus = BookmarkLocationStatus.AMBIGUOUS)
+                    } else {
+                        proposed.getValue(original.id)
+                    }
+                }
+                state
             }
-            state
-        }
         if (!stateUpdate.accepted) return false
         notifyChanged()
         return true
     }
 
-    fun handleBranchRename(rootUrl: String, oldName: String, newName: String): Boolean {
+    fun handleBranchRename(
+        rootUrl: String,
+        oldName: String,
+        newName: String,
+    ): Boolean {
         if (stateService.isReadOnlyForFutureSchema()) return false
         if (oldName == newName) return true
-        val stateUpdate = stateService.updateState { state ->
-            val incoming = state.bookmarks.filter { record ->
-                record.scopeKind == BookmarkScopeKind.BRANCH &&
-                    record.repositoryRootUrl == rootUrl && record.branchName == oldName
+        val stateUpdate =
+            stateService.updateState { state ->
+                val incoming =
+                    state.bookmarks.filter { record ->
+                        record.scopeKind == BookmarkScopeKind.BRANCH &&
+                            record.repositoryRootUrl == rootUrl && record.branchName == oldName
+                    }
+                val incomingIds = incoming.mapTo(hashSetOf()) { it.id }
+                val accepted = state.bookmarks.filter { it.id !in incomingIds }.toMutableList()
+                val replacements =
+                    incoming.associate { original ->
+                        val candidate = original.copy(branchName = newName)
+                        val locationConflict = duplicateLocation(accepted, candidate, original.id)
+                        val mnemonicConflict =
+                            MnemonicPolicy.sameScopeConflicts(
+                                accepted,
+                                candidate.mnemonic,
+                                candidate.exactScopeKey(),
+                                original.id,
+                            )
+                        val replacement =
+                            if (locationConflict != null || mnemonicConflict.isNotEmpty()) {
+                                original.copy(locationStatus = BookmarkLocationStatus.AMBIGUOUS)
+                            } else {
+                                candidate
+                            }
+                        accepted += replacement
+                        original.id to replacement
+                    }
+                state.bookmarks.replaceAll { record -> replacements[record.id] ?: record }
+                state
             }
-            val incomingIds = incoming.mapTo(hashSetOf()) { it.id }
-            val accepted = state.bookmarks.filter { it.id !in incomingIds }.toMutableList()
-            val replacements = incoming.associate { original ->
-                val candidate = original.copy(branchName = newName)
-                val locationConflict = duplicateLocation(accepted, candidate, original.id)
-                val mnemonicConflict = MnemonicPolicy.sameScopeConflicts(
-                    accepted,
-                    candidate.mnemonic,
-                    candidate.exactScopeKey(),
-                    original.id,
-                )
-                val replacement = if (locationConflict != null || mnemonicConflict.isNotEmpty()) {
-                    original.copy(locationStatus = BookmarkLocationStatus.AMBIGUOUS)
-                } else {
-                    candidate
-                }
-                accepted += replacement
-                original.id to replacement
-            }
-            state.bookmarks.replaceAll { record -> replacements[record.id] ?: record }
-            state
-        }
         if (!stateUpdate.accepted) return false
         notifyChanged()
         return true
     }
 
-    fun resolveMnemonic(mnemonic: String?, activeEditorRootUrl: String? = null): MnemonicResolution =
-        MnemonicPolicy.resolveVisible(allBookmarks(), mnemonic, context, activeEditorRootUrl)
+    fun resolveMnemonic(
+        mnemonic: String?,
+        activeEditorRootUrl: String? = null,
+    ): MnemonicResolution = MnemonicPolicy.resolveVisible(allBookmarks(), mnemonic, context, activeEditorRootUrl)
 
-    fun addListener(parent: Disposable, listener: () -> Unit) {
+    fun addListener(
+        parent: Disposable,
+        listener: () -> Unit,
+    ) {
         listeners += listener
         Disposer.register(parent, Disposable { listeners -= listener })
     }
@@ -554,18 +643,32 @@ internal class ContextualBookmarkManagerCore(
         provider: (String) -> BookmarkLivePosition?,
     ) {
         livePositionProvider = provider
-        Disposer.register(parent, Disposable {
-            if (livePositionProvider === provider) livePositionProvider = null
-        })
+        Disposer.register(
+            parent,
+            Disposable {
+                if (livePositionProvider === provider) livePositionProvider = null
+            },
+        )
     }
 
-    private fun scopeRecord(kind: BookmarkScopeKind, creationContext: BookmarkCreationContext): BookmarkRecord? = when (kind) {
-        BookmarkScopeKind.GLOBAL -> BookmarkRecord(scopeKind = kind)
-        BookmarkScopeKind.BRANCH -> creationContext.branch?.let {
-            BookmarkRecord(scopeKind = kind, repositoryRootUrl = it.repositoryRootUrl, branchName = it.branchName)
+    private fun scopeRecord(
+        kind: BookmarkScopeKind,
+        creationContext: BookmarkCreationContext,
+    ): BookmarkRecord? = when (kind) {
+        BookmarkScopeKind.GLOBAL -> {
+            BookmarkRecord(scopeKind = kind)
         }
-        BookmarkScopeKind.CHANGELIST -> (creationContext.changelist ?: context.activeChangelist)?.let {
-            BookmarkRecord(scopeKind = kind, changelistId = it.id, changelistName = it.displayName)
+
+        BookmarkScopeKind.BRANCH -> {
+            creationContext.branch?.let {
+                BookmarkRecord(scopeKind = kind, repositoryRootUrl = it.repositoryRootUrl, branchName = it.branchName)
+            }
+        }
+
+        BookmarkScopeKind.CHANGELIST -> {
+            (creationContext.changelist ?: context.activeChangelist)?.let {
+                BookmarkRecord(scopeKind = kind, changelistId = it.id, changelistName = it.displayName)
+            }
         }
     }
 
@@ -575,7 +678,11 @@ internal class ContextualBookmarkManagerCore(
             records.replaceAll { record ->
                 if (record.scopeKind == BookmarkScopeKind.CHANGELIST && record.changelistId == active.id &&
                     record.changelistName != active.displayName
-                ) record.copy(changelistName = active.displayName) else record
+                ) {
+                    record.copy(changelistName = active.displayName)
+                } else {
+                    record
+                }
             }
         }
     }
@@ -597,8 +704,9 @@ internal class ContextualBookmarkManagerCore(
         val candidateLine = candidatePosition?.line ?: candidate.line
         return records.firstOrNull { record ->
             if (record.id == excludedId) return@firstOrNull false
-            val livePosition = existingLivePositions?.get(record.id)
-                ?: if (useExistingLivePositions) livePositionProvider?.invoke(record.id) else null
+            val livePosition =
+                existingLivePositions?.get(record.id)
+                    ?: if (useExistingLivePositions) livePositionProvider?.invoke(record.id) else null
             val fileUrl = livePosition?.fileUrl ?: record.fileUrl
             val line = livePosition?.line ?: record.line
             fileUrl == candidateFileUrl && line == candidateLine &&
@@ -622,8 +730,7 @@ internal class ContextualBookmarkManagerCore(
         locationStatus = updated.locationStatus,
     )
 
-    private fun BookmarkRecord.hasSameLocationAs(other: BookmarkRecord): Boolean =
-        fileUrl == other.fileUrl && line == other.line && column == other.column &&
-            currentLineHash == other.currentLineHash && previousLineHash == other.previousLineHash &&
-            nextLineHash == other.nextLineHash && locationStatus == other.locationStatus
+    private fun BookmarkRecord.hasSameLocationAs(other: BookmarkRecord): Boolean = fileUrl == other.fileUrl && line == other.line && column == other.column &&
+        currentLineHash == other.currentLineHash && previousLineHash == other.previousLineHash &&
+        nextLineHash == other.nextLineHash && locationStatus == other.locationStatus
 }

@@ -2,8 +2,14 @@ package me.a1i.contextualbookmarks.model
 
 sealed interface MnemonicResolution {
     data object None : MnemonicResolution
-    data class Selected(val record: BookmarkRecord) : MnemonicResolution
-    data class Choices(val records: List<BookmarkRecord>) : MnemonicResolution
+
+    data class Selected(
+        val record: BookmarkRecord,
+    ) : MnemonicResolution
+
+    data class Choices(
+        val records: List<BookmarkRecord>,
+    ) : MnemonicResolution
 }
 
 object MnemonicPolicy {
@@ -35,7 +41,8 @@ object MnemonicPolicy {
         context: BookmarkContextSnapshot,
     ): List<BookmarkRecord> {
         val normalized = normalize(mnemonic) ?: return emptyList()
-        return BookmarkVisibilityPolicy.visible(records, context)
+        return BookmarkVisibilityPolicy
+            .visible(records, context)
             .filter { normalize(it.mnemonic) == normalized }
     }
 
@@ -50,10 +57,11 @@ object MnemonicPolicy {
         if (candidates.size == 1) return MnemonicResolution.Selected(candidates.single())
 
         if (activeEditorRepositoryRootUrl != null) {
-            val inActiveRoot = candidates.filter {
-                it.scopeKind == BookmarkScopeKind.BRANCH &&
-                    it.repositoryRootUrl == activeEditorRepositoryRootUrl
-            }
+            val inActiveRoot =
+                candidates.filter {
+                    it.scopeKind == BookmarkScopeKind.BRANCH &&
+                        it.repositoryRootUrl == activeEditorRepositoryRootUrl
+                }
             if (inActiveRoot.size == 1) return MnemonicResolution.Selected(inActiveRoot.single())
         }
 

@@ -37,16 +37,19 @@ class ContextualBookmarkStateService : PersistentStateComponent<Element> {
 
     override fun loadState(state: Element) {
         synchronized(lock) {
-            val rawSchemaVersion = state.getAttributeValue("schemaVersion")
-                ?: state.getChildren("option")
-                    .firstOrNull { it.getAttributeValue("name") == "schemaVersion" }
-                    ?.getAttributeValue("value")
+            val rawSchemaVersion =
+                state.getAttributeValue("schemaVersion")
+                    ?: state
+                        .getChildren("option")
+                        .firstOrNull { it.getAttributeValue("name") == "schemaVersion" }
+                        ?.getAttributeValue("value")
             val schemaVersion = rawSchemaVersion?.toIntOrNull()
             if (rawSchemaVersion != null && (schemaVersion == null || schemaVersion > CURRENT_SCHEMA_VERSION)) {
                 futureSchemaXml = state.clone()
-                current = ContextualBookmarkState(
-                    schemaVersion = schemaVersion ?: (CURRENT_SCHEMA_VERSION + 1),
-                )
+                current =
+                    ContextualBookmarkState(
+                        schemaVersion = schemaVersion ?: (CURRENT_SCHEMA_VERSION + 1),
+                    )
                 return@synchronized
             }
             val deserialized = XmlSerializer.deserialize(state, ContextualBookmarkState::class.java)
@@ -59,17 +62,15 @@ class ContextualBookmarkStateService : PersistentStateComponent<Element> {
 
     internal fun isReadOnlyForFutureSchema(): Boolean = synchronized(lock) { futureSchemaXml != null }
 
-    fun updateState(transform: (ContextualBookmarkState) -> ContextualBookmarkState): BookmarkStateUpdateResult =
-        synchronized(lock) {
-            if (futureSchemaXml != null) {
-                return@synchronized BookmarkStateUpdateResult(current.deepCopy(), accepted = false)
-            }
-            current = transform(current.deepCopy()).sanitize()
-            BookmarkStateUpdateResult(current.deepCopy(), accepted = true)
+    fun updateState(transform: (ContextualBookmarkState) -> ContextualBookmarkState): BookmarkStateUpdateResult = synchronized(lock) {
+        if (futureSchemaXml != null) {
+            return@synchronized BookmarkStateUpdateResult(current.deepCopy(), accepted = false)
         }
+        current = transform(current.deepCopy()).sanitize()
+        BookmarkStateUpdateResult(current.deepCopy(), accepted = true)
+    }
 
-    fun updateBookmarks(transform: (MutableList<BookmarkRecord>) -> Unit): BookmarkStateUpdateResult =
-        updateState { state -> state.apply { transform(bookmarks) } }
+    fun updateBookmarks(transform: (MutableList<BookmarkRecord>) -> Unit): BookmarkStateUpdateResult = updateState { state -> state.apply { transform(bookmarks) } }
 
     private fun migrate(state: ContextualBookmarkState): ContextualBookmarkState {
         // Schema 1 is the initial format. Future migrations must be appended and
@@ -81,14 +82,16 @@ class ContextualBookmarkStateService : PersistentStateComponent<Element> {
     private fun ContextualBookmarkState.sanitize(): ContextualBookmarkState {
         if (schemaVersion <= CURRENT_SCHEMA_VERSION) schemaVersion = CURRENT_SCHEMA_VERSION
         nextOrder = nextOrder.coerceAtLeast((bookmarks.maxOfOrNull { it.order } ?: 0L) + 1L)
-        bookmarks = bookmarks.map { record ->
-            record.copy(
-                line = record.line.coerceAtLeast(0),
-                column = record.column.coerceAtLeast(0),
-                mnemonic = MnemonicPolicy.normalize(record.mnemonic),
-                description = record.description?.trim()?.takeIf(String::isNotEmpty),
-            )
-        }.toMutableList()
+        bookmarks =
+            bookmarks
+                .map { record ->
+                    record.copy(
+                        line = record.line.coerceAtLeast(0),
+                        column = record.column.coerceAtLeast(0),
+                        mnemonic = MnemonicPolicy.normalize(record.mnemonic),
+                        description = record.description?.trim()?.takeIf(String::isNotEmpty),
+                    )
+                }.toMutableList()
         return this
     }
 }

@@ -22,7 +22,9 @@ import me.a1i.contextualbookmarks.service.ContextualBookmarkManager
 import java.util.concurrent.CompletableFuture
 
 @Service(Service.Level.PROJECT)
-class BookmarkNavigator(private val project: Project) {
+class BookmarkNavigator(
+    private val project: Project,
+) {
     private val locator = BookmarkLocator()
     private val manager by lazy { project.service<ContextualBookmarkManager>() }
     private val tracker by lazy { project.service<BookmarkPositionTracker>() }
@@ -36,15 +38,17 @@ class BookmarkNavigator(private val project: Project) {
                     future.complete(BookmarkLocationResult.Missing)
                     return@executeOnPooledThread
                 }
-                val livePositions = ApplicationManager.getApplication().runReadAction<Map<String, BookmarkLivePosition>> {
-                    tracker.livePositions()
-                }
+                val livePositions =
+                    ApplicationManager.getApplication().runReadAction<Map<String, BookmarkLivePosition>> {
+                        tracker.livePositions()
+                    }
                 val livePosition = livePositions[currentRecord.id]
-                val file = sequenceOf(livePosition?.fileUrl, currentRecord.fileUrl)
-                    .filterNotNull()
-                    .distinct()
-                    .mapNotNull(VirtualFileManager.getInstance()::findFileByUrl)
-                    .firstOrNull { it.isValid && !it.isDirectory }
+                val file =
+                    sequenceOf(livePosition?.fileUrl, currentRecord.fileUrl)
+                        .filterNotNull()
+                        .distinct()
+                        .mapNotNull(VirtualFileManager.getInstance()::findFileByUrl)
+                        .firstOrNull { it.isValid && !it.isDirectory }
                 if (file == null || !file.isValid || file.isDirectory) {
                     val result = BookmarkLocationResult.Missing
                     if (markUnavailable(currentRecord, BookmarkLocationStatus.MISSING)) {
@@ -54,10 +58,11 @@ class BookmarkNavigator(private val project: Project) {
                     return@executeOnPooledThread
                 }
 
-                val cachedText = ApplicationManager.getApplication().runReadAction<CharSequence?> {
-                    ProgressManager.checkCanceled()
-                    FileDocumentManager.getInstance().getCachedDocument(file)?.immutableCharSequence
-                }
+                val cachedText =
+                    ApplicationManager.getApplication().runReadAction<CharSequence?> {
+                        ProgressManager.checkCanceled()
+                        FileDocumentManager.getInstance().getCachedDocument(file)?.immutableCharSequence
+                    }
                 val text = cachedText ?: VfsUtilCore.loadText(file)
                 ProgressManager.checkCanceled()
                 val lines = text.toString().split('\n').map { it.removeSuffix("\r") }
@@ -70,44 +75,50 @@ class BookmarkNavigator(private val project: Project) {
                     is BookmarkLocationResult.Relocated,
                     -> {
                         val line = checkNotNull(result.line)
-                        val column = if (result is BookmarkLocationResult.Live) {
-                            livePositionForFile?.column ?: currentRecord.column
-                        } else {
-                            currentRecord.column
-                        }.coerceIn(0, lines[line].length)
-                        val signature = LocationSignatures.fromLines(lines, line)
-                        val update = manager.updateLocationFromNavigation(
-                            updated = currentRecord.copy(
-                                fileUrl = file.url,
-                                line = line,
-                                column = column,
-                                currentLineHash = signature.currentLineHash,
-                                previousLineHash = signature.previousLineHash,
-                                nextLineHash = signature.nextLineHash,
-                                locationStatus = BookmarkLocationStatus.AVAILABLE,
-                            ),
-                            expectedLocation = currentRecord,
-                            livePositions = livePositions,
-                        )
-                        if (update !is BookmarkOperationResult.Updated) {
-                            val rejectedResult = if (update is BookmarkOperationResult.DuplicateLocation) {
-                                notifyUnavailable("Bookmark relocation conflicts with another bookmark; relink it from the tool window")
-                                BookmarkLocationResult.Ambiguous(listOf(line))
+                        val column =
+                            if (result is BookmarkLocationResult.Live) {
+                                livePositionForFile?.column ?: currentRecord.column
                             } else {
-                                BookmarkLocationResult.Missing
-                            }
+                                currentRecord.column
+                            }.coerceIn(0, lines[line].length)
+                        val signature = LocationSignatures.fromLines(lines, line)
+                        val update =
+                            manager.updateLocationFromNavigation(
+                                updated =
+                                currentRecord.copy(
+                                    fileUrl = file.url,
+                                    line = line,
+                                    column = column,
+                                    currentLineHash = signature.currentLineHash,
+                                    previousLineHash = signature.previousLineHash,
+                                    nextLineHash = signature.nextLineHash,
+                                    locationStatus = BookmarkLocationStatus.AVAILABLE,
+                                ),
+                                expectedLocation = currentRecord,
+                                livePositions = livePositions,
+                            )
+                        if (update !is BookmarkOperationResult.Updated) {
+                            val rejectedResult =
+                                if (update is BookmarkOperationResult.DuplicateLocation) {
+                                    notifyUnavailable("Bookmark relocation conflicts with another bookmark; relink it from the tool window")
+                                    BookmarkLocationResult.Ambiguous(listOf(line))
+                                } else {
+                                    BookmarkLocationResult.Missing
+                                }
                             future.complete(rejectedResult)
                             return@executeOnPooledThread
                         }
                         ApplicationManager.getApplication().invokeLater {
                             if (!project.isDisposed) {
-                                val locationIsCurrent = manager.allBookmarks().any { persisted ->
-                                    persisted.id == update.record.id && persisted.hasSameLocationAs(update.record)
-                                }
+                                val locationIsCurrent =
+                                    manager.allBookmarks().any { persisted ->
+                                        persisted.id == update.record.id && persisted.hasSameLocationAs(update.record)
+                                    }
                                 if (locationIsCurrent) OpenFileDescriptor(project, file, line, column).navigate(true)
                             }
                         }
                     }
+
                     is BookmarkLocationResult.Ambiguous -> {
                         if (!markUnavailable(currentRecord, BookmarkLocationStatus.AMBIGUOUS)) {
                             future.complete(BookmarkLocationResult.Missing)
@@ -115,6 +126,7 @@ class BookmarkNavigator(private val project: Project) {
                         }
                         notifyUnavailable("Bookmark location is ambiguous; relink it from the tool window")
                     }
+
                     BookmarkLocationResult.Missing -> {
                         if (!markUnavailable(currentRecord, BookmarkLocationStatus.MISSING)) {
                             future.complete(BookmarkLocationResult.Missing)
@@ -134,13 +146,16 @@ class BookmarkNavigator(private val project: Project) {
         return future
     }
 
-    private fun markUnavailable(record: BookmarkRecord, status: BookmarkLocationStatus): Boolean =
-        manager.updateLocationStatusIfUnchanged(record, status) is BookmarkOperationResult.Updated
+    private fun markUnavailable(
+        record: BookmarkRecord,
+        status: BookmarkLocationStatus,
+    ): Boolean = manager.updateLocationStatusIfUnchanged(record, status) is BookmarkOperationResult.Updated
 
     private fun notifyUnavailable(content: String) {
         ApplicationManager.getApplication().invokeLater {
             if (!project.isDisposed) {
-                NotificationGroupManager.getInstance()
+                NotificationGroupManager
+                    .getInstance()
                     .getNotificationGroup("Contextual Bookmarks")
                     .createNotification(content, NotificationType.WARNING)
                     .notify(project)
@@ -148,8 +163,7 @@ class BookmarkNavigator(private val project: Project) {
         }
     }
 
-    private fun BookmarkRecord.hasSameLocationAs(other: BookmarkRecord): Boolean =
-        fileUrl == other.fileUrl && line == other.line && column == other.column &&
-            currentLineHash == other.currentLineHash && previousLineHash == other.previousLineHash &&
-            nextLineHash == other.nextLineHash && locationStatus == other.locationStatus
+    private fun BookmarkRecord.hasSameLocationAs(other: BookmarkRecord): Boolean = fileUrl == other.fileUrl && line == other.line && column == other.column &&
+        currentLineHash == other.currentLineHash && previousLineHash == other.previousLineHash &&
+        nextLineHash == other.nextLineHash && locationStatus == other.locationStatus
 }

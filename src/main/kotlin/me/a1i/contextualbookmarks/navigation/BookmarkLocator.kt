@@ -8,18 +8,32 @@ import kotlin.math.abs
 sealed interface BookmarkLocationResult {
     val line: Int?
 
-    data class Live(override val line: Int) : BookmarkLocationResult
-    data class Exact(override val line: Int) : BookmarkLocationResult
-    data class Relocated(override val line: Int) : BookmarkLocationResult
-    data class Ambiguous(val candidates: List<Int>) : BookmarkLocationResult {
+    data class Live(
+        override val line: Int,
+    ) : BookmarkLocationResult
+
+    data class Exact(
+        override val line: Int,
+    ) : BookmarkLocationResult
+
+    data class Relocated(
+        override val line: Int,
+    ) : BookmarkLocationResult
+
+    data class Ambiguous(
+        val candidates: List<Int>,
+    ) : BookmarkLocationResult {
         override val line: Int? = null
     }
+
     data object Missing : BookmarkLocationResult {
         override val line: Int? = null
     }
 }
 
-class BookmarkLocator(private val searchRadius: Int = 200) {
+class BookmarkLocator(
+    private val searchRadius: Int = 200,
+) {
     fun locate(
         record: BookmarkRecord,
         lines: List<String>,
@@ -34,8 +48,11 @@ class BookmarkLocator(private val searchRadius: Int = 200) {
 
         val signature = record.signature()
         if (signature.isEmpty) {
-            return if (record.line in availableLines) BookmarkLocationResult.Exact(record.line)
-            else BookmarkLocationResult.Missing
+            return if (record.line in availableLines) {
+                BookmarkLocationResult.Exact(record.line)
+            } else {
+                BookmarkLocationResult.Missing
+            }
         }
 
         if (record.line in availableLines && matchesCurrent(lines, firstLine, record.line, signature)) {
@@ -43,11 +60,12 @@ class BookmarkLocator(private val searchRadius: Int = 200) {
         }
 
         val center = record.line.coerceIn(availableLines)
-        val candidates = availableLines
-            .asSequence()
-            .filter { abs(it - center) <= searchRadius }
-            .filter { matchesCurrent(lines, firstLine, it, signature) }
-            .toList()
+        val candidates =
+            availableLines
+                .asSequence()
+                .filter { abs(it - center) <= searchRadius }
+                .filter { matchesCurrent(lines, firstLine, it, signature) }
+                .toList()
 
         if (candidates.isEmpty()) return BookmarkLocationResult.Missing
         if (candidates.size == 1) return BookmarkLocationResult.Relocated(candidates.single())
@@ -55,8 +73,11 @@ class BookmarkLocator(private val searchRadius: Int = 200) {
         val scored = candidates.map { it to neighborScore(lines, firstLine, it, signature) }
         val bestScore = scored.maxOf { it.second }
         val best = scored.filter { it.second == bestScore }.map { it.first }
-        return if (best.size == 1 && bestScore > 0) BookmarkLocationResult.Relocated(best.single())
-        else BookmarkLocationResult.Ambiguous(best.sorted())
+        return if (best.size == 1 && bestScore > 0) {
+            BookmarkLocationResult.Relocated(best.single())
+        } else {
+            BookmarkLocationResult.Ambiguous(best.sorted())
+        }
     }
 
     private fun matchesCurrent(
@@ -76,10 +97,14 @@ class BookmarkLocator(private val searchRadius: Int = 200) {
         val localLine = line - firstLine
         if (signature.previousLineHash.isNotBlank() && localLine > 0 &&
             LocationSignatures.hash(lines[localLine - 1]) == signature.previousLineHash
-        ) score++
+        ) {
+            score++
+        }
         if (signature.nextLineHash.isNotBlank() && localLine + 1 < lines.size &&
             LocationSignatures.hash(lines[localLine + 1]) == signature.nextLineHash
-        ) score++
+        ) {
+            score++
+        }
         return score
     }
 }

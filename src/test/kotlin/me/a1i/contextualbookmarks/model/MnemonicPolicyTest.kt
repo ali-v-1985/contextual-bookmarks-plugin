@@ -36,9 +36,10 @@ class MnemonicPolicyTest {
     fun `active editor root uniquely resolves multi-root collision`() {
         val one = branch("one", "9", "main", "file:///one", 1)
         val two = branch("two", "9", "main", "file:///two", 2)
-        val context = BookmarkContextSnapshot(
-            branches = setOf(BranchKey("file:///one", "main"), BranchKey("file:///two", "main")),
-        )
+        val context =
+            BookmarkContextSnapshot(
+                branches = setOf(BranchKey("file:///one", "main"), BranchKey("file:///two", "main")),
+            )
 
         assertEquals(
             MnemonicResolution.Selected(two),

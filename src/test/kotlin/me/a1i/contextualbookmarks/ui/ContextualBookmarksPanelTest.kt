@@ -19,26 +19,29 @@ class ContextualBookmarksPanelTest : BasePlatformTestCase() {
     fun testMnemonicButtonExplainsSelectionAndAssignsToSelectedBookmark() {
         val manager = project.getService(ContextualBookmarkManager::class.java)
         manager.delete(manager.allBookmarks().map { it.id })
-        val unselected = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = "file:///unselected.kt",
-                line = 1,
-                mnemonic = "B",
-                scopeKind = BookmarkScopeKind.GLOBAL,
-            ),
-        ) as BookmarkOperationResult.Created
-        val selected = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = "file:///selected.kt",
-                line = 3,
-                scopeKind = BookmarkScopeKind.GLOBAL,
-            ),
-        ) as BookmarkOperationResult.Created
+        val unselected =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = "file:///unselected.kt",
+                    line = 1,
+                    mnemonic = "B",
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                ),
+            ) as BookmarkOperationResult.Created
+        val selected =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = "file:///selected.kt",
+                    line = 3,
+                    scopeKind = BookmarkScopeKind.GLOBAL,
+                ),
+            ) as BookmarkOperationResult.Created
         val panel = ContextualBookmarksPanel(project)
         Disposer.register(testRootDisposable, panel)
-        val mnemonicButton = components(panel)
-            .filterIsInstance<JButton>()
-            .single { it.text == "Assign mnemonic…" }
+        val mnemonicButton =
+            components(panel)
+                .filterIsInstance<JButton>()
+                .single { it.text == "Assign mnemonic…" }
         val details = components(panel).filterIsInstance<JTextArea>().single()
 
         assertFalse(mnemonicButton.isEnabled)

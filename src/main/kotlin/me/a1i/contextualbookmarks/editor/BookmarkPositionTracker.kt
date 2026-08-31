@@ -27,7 +27,9 @@ import me.a1i.contextualbookmarks.service.ContextualBookmarkManager
 import java.util.concurrent.ConcurrentHashMap
 
 @Service(Service.Level.PROJECT)
-class BookmarkPositionTracker(private val project: Project) : Disposable {
+class BookmarkPositionTracker(
+    private val project: Project,
+) : Disposable {
     private data class DocumentLineWindow(
         val firstLine: Int,
         val lines: List<String>,
@@ -70,24 +72,29 @@ class BookmarkPositionTracker(private val project: Project) : Disposable {
         ApplicationManager.getApplication().assertIsDispatchThread()
         if (!started) return
         val all = manager.allBookmarks().associateBy { it.id }
-        val visible = manager.visibleBookmarks()
-            .filter { it.locationStatus == BookmarkLocationStatus.AVAILABLE }
-            .associateBy { it.id }
+        val visible =
+            manager
+                .visibleBookmarks()
+                .filter { it.locationStatus == BookmarkLocationStatus.AVAILABLE }
+                .associateBy { it.id }
         val lineSnapshots = mutableMapOf<Document, MutableMap<Int, String>>()
         val updatesBeforeDisposal = mutableListOf<BookmarkRecord>()
         tracked.entries.removeIf { (id, position) ->
             val record = all[id]
             val visibleRecord = visible[id]
-            val currentFileUrl = FileDocumentManager.getInstance().getFile(position.document)?.url
-                ?: position.persistedFileUrl
+            val currentFileUrl =
+                FileDocumentManager.getInstance().getFile(position.document)?.url
+                    ?: position.persistedFileUrl
             val editorCount = visibleRecord?.let { openTextEditorCount(currentFileUrl) } ?: 0
-            val persistedLocationChanged = record != null && (
-                record.fileUrl != position.persistedFileUrl ||
-                    record.line != position.persistedLine ||
-                    record.column != position.persistedColumn
-                )
-            val remove = visibleRecord == null || persistedLocationChanged || !position.marker.isValid ||
-                editorCount == 0 || editorCount != position.highlighters.size
+            val persistedLocationChanged =
+                record != null && (
+                    record.fileUrl != position.persistedFileUrl ||
+                        record.line != position.persistedLine ||
+                        record.column != position.persistedColumn
+                    )
+            val remove =
+                visibleRecord == null || persistedLocationChanged || !position.marker.isValid ||
+                    editorCount == 0 || editorCount != position.highlighters.size
             if (remove) {
                 if (shouldSnapshotTrackedPosition(record, visibleRecord, persistedLocationChanged)) {
                     updatesBeforeDisposal += snapshotPosition(checkNotNull(record), position)
@@ -111,10 +118,11 @@ class BookmarkPositionTracker(private val project: Project) : Disposable {
     fun flushPositions() {
         val flush = {
             val byId = manager.allBookmarks().associateBy { it.id }
-            val updated = tracked.mapNotNull { (id, position) ->
-                val record = byId[id] ?: return@mapNotNull null
-                snapshotPosition(record, position)
-            }
+            val updated =
+                tracked.mapNotNull { (id, position) ->
+                    val record = byId[id] ?: return@mapNotNull null
+                    snapshotPosition(record, position)
+                }
             manager.updateLocations(updated)
             val persistedById = manager.allBookmarks().associateBy { it.id }
             tracked.forEach { (id, position) ->
@@ -127,9 +135,7 @@ class BookmarkPositionTracker(private val project: Project) : Disposable {
         if (ApplicationManager.getApplication().isDispatchThread) flush() else ApplicationManager.getApplication().invokeAndWait(flush)
     }
 
-    fun liveMarkerLine(bookmarkId: String): Int? {
-        return livePosition(bookmarkId)?.line
-    }
+    fun liveMarkerLine(bookmarkId: String): Int? = livePosition(bookmarkId)?.line
 
     fun livePosition(bookmarkId: String): BookmarkLivePosition? {
         val position = tracked[bookmarkId] ?: return null
@@ -140,9 +146,10 @@ class BookmarkPositionTracker(private val project: Project) : Disposable {
         return BookmarkLivePosition(fileUrl, line, column)
     }
 
-    fun livePositions(): Map<String, BookmarkLivePosition> = tracked.keys.mapNotNull { id ->
-        livePosition(id)?.let { id to it }
-    }.toMap()
+    fun livePositions(): Map<String, BookmarkLivePosition> = tracked.keys
+        .mapNotNull { id ->
+            livePosition(id)?.let { id to it }
+        }.toMap()
 
     internal fun trackedBookmarkIds(): Set<String> = tracked.keys.toSet()
 
@@ -158,58 +165,76 @@ class BookmarkPositionTracker(private val project: Project) : Disposable {
         lineSnapshots: MutableMap<Document, MutableMap<Int, String>>,
     ): TrackedPosition? {
         val file = VirtualFileManager.getInstance().findFileByUrl(record.fileUrl) ?: return null
-        val editors = FileEditorManager.getInstance(project).getEditors(file)
-            .asSequence()
-            .filterIsInstance<TextEditor>()
-            .map { it.editor }
-            .toList()
+        val editors =
+            FileEditorManager
+                .getInstance(project)
+                .getEditors(file)
+                .asSequence()
+                .filterIsInstance<TextEditor>()
+                .map { it.editor }
+                .toList()
         val document = editors.firstOrNull()?.document ?: return null
         if (document.lineCount == 0) return null
         val window = documentLineWindow(document, record.line, lineSnapshots)
         val location = locator.locate(record, window.lines, firstLine = window.firstLine)
-        val line = when (location) {
-            is BookmarkLocationResult.Live -> location.line
-            is BookmarkLocationResult.Exact -> location.line
-            is BookmarkLocationResult.Relocated -> location.line
-            is BookmarkLocationResult.Ambiguous -> {
-                manager.updateLocationStatus(record.id, BookmarkLocationStatus.AMBIGUOUS)
-                return null
+        val line =
+            when (location) {
+                is BookmarkLocationResult.Live -> {
+                    location.line
+                }
+
+                is BookmarkLocationResult.Exact -> {
+                    location.line
+                }
+
+                is BookmarkLocationResult.Relocated -> {
+                    location.line
+                }
+
+                is BookmarkLocationResult.Ambiguous -> {
+                    manager.updateLocationStatus(record.id, BookmarkLocationStatus.AMBIGUOUS)
+                    return null
+                }
+
+                BookmarkLocationResult.Missing -> {
+                    manager.updateLocationStatus(record.id, BookmarkLocationStatus.MISSING)
+                    return null
+                }
             }
-            BookmarkLocationResult.Missing -> {
-                manager.updateLocationStatus(record.id, BookmarkLocationStatus.MISSING)
-                return null
-            }
-        }
         val signature = LocationSignatures.fromLines(window.lines, line - window.firstLine)
-        val resolvedRecord = record.copy(
-            line = line,
-            currentLineHash = signature.currentLineHash,
-            previousLineHash = signature.previousLineHash,
-            nextLineHash = signature.nextLineHash,
-            locationStatus = BookmarkLocationStatus.AVAILABLE,
-        )
-        val trackedRecord = if (resolvedRecord == record) {
-            record
-        } else {
-            when (val update = manager.updateLocation(resolvedRecord)) {
-                is BookmarkOperationResult.Updated -> update.record
-                else -> return null
+        val resolvedRecord =
+            record.copy(
+                line = line,
+                currentLineHash = signature.currentLineHash,
+                previousLineHash = signature.previousLineHash,
+                nextLineHash = signature.nextLineHash,
+                locationStatus = BookmarkLocationStatus.AVAILABLE,
+            )
+        val trackedRecord =
+            if (resolvedRecord == record) {
+                record
+            } else {
+                when (val update = manager.updateLocation(resolvedRecord)) {
+                    is BookmarkOperationResult.Updated -> update.record
+                    else -> return null
+                }
             }
-        }
         val trackedLine = trackedRecord.line
         val start = document.getLineStartOffset(trackedLine)
         val end = document.getLineEndOffset(trackedLine)
         val offset = (start + trackedRecord.column).coerceAtMost(end)
         val marker = document.createRangeMarker(offset, offset)
-        val highlighters = editors.map { editor ->
-            editor.markupModel.addRangeHighlighter(
-                start,
-                end,
-                HighlighterLayer.ADDITIONAL_SYNTAX,
-                null,
-                HighlighterTargetArea.LINES_IN_RANGE,
-            ).also { it.gutterIconRenderer = renderer(trackedRecord) }
-        }
+        val highlighters =
+            editors.map { editor ->
+                editor.markupModel
+                    .addRangeHighlighter(
+                        start,
+                        end,
+                        HighlighterLayer.ADDITIONAL_SYNTAX,
+                        null,
+                        HighlighterTargetArea.LINES_IN_RANGE,
+                    ).also { it.gutterIconRenderer = renderer(trackedRecord) }
+            }
         return TrackedPosition(
             document = document,
             marker = marker,
@@ -220,11 +245,15 @@ class BookmarkPositionTracker(private val project: Project) : Disposable {
         )
     }
 
-    private fun snapshotPosition(record: BookmarkRecord, position: TrackedPosition): BookmarkRecord {
+    private fun snapshotPosition(
+        record: BookmarkRecord,
+        position: TrackedPosition,
+    ): BookmarkRecord {
         if (!position.marker.isValid) return record.copy(locationStatus = BookmarkLocationStatus.MISSING)
-        val line = position.document.getLineNumber(
-            position.marker.startOffset.coerceIn(0, position.document.textLength),
-        )
+        val line =
+            position.document.getLineNumber(
+                position.marker.startOffset.coerceIn(0, position.document.textLength),
+            )
         val column = position.marker.startOffset - position.document.getLineStartOffset(line)
         val signature = DocumentLocationSignatures.fromDocument(position.document, line)
         val fileUrl = FileDocumentManager.getInstance().getFile(position.document)?.url ?: record.fileUrl
@@ -262,13 +291,14 @@ class BookmarkPositionTracker(private val project: Project) : Disposable {
         val firstLine = (center - LOCATION_SEARCH_RADIUS - 1).coerceAtLeast(0)
         val lastLine = (center + LOCATION_SEARCH_RADIUS + 1).coerceAtMost(document.lineCount - 1)
         val documentSnapshots = snapshots.getOrPut(document) { mutableMapOf() }
-        val lines = (firstLine..lastLine).map { line ->
-            documentSnapshots.getOrPut(line) {
-                val start = document.getLineStartOffset(line)
-                val end = document.getLineEndOffset(line)
-                document.charsSequence.subSequence(start, end).toString()
+        val lines =
+            (firstLine..lastLine).map { line ->
+                documentSnapshots.getOrPut(line) {
+                    val start = document.getLineStartOffset(line)
+                    val end = document.getLineEndOffset(line)
+                    document.charsSequence.subSequence(start, end).toString()
+                }
             }
-        }
         return DocumentLineWindow(firstLine, lines)
     }
 

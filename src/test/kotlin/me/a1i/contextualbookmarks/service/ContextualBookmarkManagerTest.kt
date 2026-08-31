@@ -1,7 +1,7 @@
 package me.a1i.contextualbookmarks.service
 
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.xmlb.XmlSerializer
 import me.a1i.contextualbookmarks.context.BookmarkContextResolverCore
 import me.a1i.contextualbookmarks.context.BookmarkContextSource
@@ -9,9 +9,9 @@ import me.a1i.contextualbookmarks.context.RepositoryContext
 import me.a1i.contextualbookmarks.model.BookmarkLocationStatus
 import me.a1i.contextualbookmarks.model.BookmarkScopeKind
 import me.a1i.contextualbookmarks.model.BranchKey
+import me.a1i.contextualbookmarks.model.CURRENT_SCHEMA_VERSION
 import me.a1i.contextualbookmarks.model.ChangelistKey
 import me.a1i.contextualbookmarks.model.ContextualBookmarkState
-import me.a1i.contextualbookmarks.model.CURRENT_SCHEMA_VERSION
 import me.a1i.contextualbookmarks.model.LocationSignature
 import me.a1i.contextualbookmarks.persistence.ContextualBookmarkStateService
 import org.jdom.Element
@@ -26,9 +26,10 @@ class ContextualBookmarkManagerTest {
     fun `create and edit results reflect sanitized descriptions`() {
         val (manager, _) = manager()
 
-        val created = manager.create(
-            CreateBookmarkRequest("file:///sanitized", 1, description = "  Description  "),
-        ) as BookmarkOperationResult.Created
+        val created =
+            manager.create(
+                CreateBookmarkRequest("file:///sanitized", 1, description = "  Description  "),
+            ) as BookmarkOperationResult.Created
         assertEquals("Description", created.record.description)
         assertEquals("Description", manager.allBookmarks().single().description)
 
@@ -90,7 +91,10 @@ class ContextualBookmarkManagerTest {
         val (manager, _) = manager()
         val main = BookmarkCreationContext(branch = BranchKey("file:///repo", "main"))
         val feature = BookmarkCreationContext(branch = BranchKey("file:///repo", "feature"))
-        val first = manager.create(CreateBookmarkRequest("file:///one", 1, mnemonic = "B", scopeKind = BookmarkScopeKind.BRANCH, context = main))
+        val first =
+            manager.create(
+                CreateBookmarkRequest("file:///one", 1, mnemonic = "B", scopeKind = BookmarkScopeKind.BRANCH, context = main),
+            )
         assertTrue(first is BookmarkOperationResult.Created)
 
         assertTrue(
@@ -98,7 +102,9 @@ class ContextualBookmarkManagerTest {
                 is BookmarkOperationResult.MnemonicConflict,
         )
         assertTrue(
-            manager.create(CreateBookmarkRequest("file:///three", 3, mnemonic = "b", scopeKind = BookmarkScopeKind.BRANCH, context = feature))
+            manager.create(
+                CreateBookmarkRequest("file:///three", 3, mnemonic = "b", scopeKind = BookmarkScopeKind.BRANCH, context = feature),
+            )
                 is BookmarkOperationResult.Created,
         )
     }
@@ -128,14 +134,15 @@ class ContextualBookmarkManagerTest {
     fun `create permits same location in a different exact scope`() {
         val (manager, _) = manager()
         manager.create(CreateBookmarkRequest("file:///same", 2, scopeKind = BookmarkScopeKind.GLOBAL))
-        val branch = manager.create(
-            CreateBookmarkRequest(
-                "file:///same",
-                2,
-                scopeKind = BookmarkScopeKind.BRANCH,
-                context = BookmarkCreationContext(branch = BranchKey("file:///repo", "main")),
-            ),
-        )
+        val branch =
+            manager.create(
+                CreateBookmarkRequest(
+                    "file:///same",
+                    2,
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    context = BookmarkCreationContext(branch = BranchKey("file:///repo", "main")),
+                ),
+            )
 
         assertTrue(branch is BookmarkOperationResult.Created)
         assertEquals(2, manager.allBookmarks().size)
@@ -146,15 +153,16 @@ class ContextualBookmarkManagerTest {
         val (manager, _) = manager()
         val global = manager.create(CreateBookmarkRequest("file:///global", 1, mnemonic = "C")) as BookmarkOperationResult.Created
         val branchContext = BookmarkCreationContext(branch = BranchKey("file:///repo", "main"))
-        val branch = manager.create(
-            CreateBookmarkRequest(
-                "file:///branch",
-                2,
-                mnemonic = "C",
-                scopeKind = BookmarkScopeKind.BRANCH,
-                context = branchContext,
-            ),
-        ) as BookmarkOperationResult.Created
+        val branch =
+            manager.create(
+                CreateBookmarkRequest(
+                    "file:///branch",
+                    2,
+                    mnemonic = "C",
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    context = branchContext,
+                ),
+            ) as BookmarkOperationResult.Created
 
         assertTrue(
             manager.reassign(branch.record.id, BookmarkScopeKind.GLOBAL, BookmarkCreationContext())
@@ -167,14 +175,15 @@ class ContextualBookmarkManagerTest {
     fun `reassign rejects duplicate effective location in target scope`() {
         val (manager, _) = manager()
         val global = manager.create(CreateBookmarkRequest("file:///same", 8)) as BookmarkOperationResult.Created
-        val branch = manager.create(
-            CreateBookmarkRequest(
-                "file:///same",
-                2,
-                scopeKind = BookmarkScopeKind.BRANCH,
-                context = BookmarkCreationContext(branch = BranchKey("file:///repo", "main")),
-            ),
-        ) as BookmarkOperationResult.Created
+        val branch =
+            manager.create(
+                CreateBookmarkRequest(
+                    "file:///same",
+                    2,
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    context = BookmarkCreationContext(branch = BranchKey("file:///repo", "main")),
+                ),
+            ) as BookmarkOperationResult.Created
         val disposable = Disposer.newDisposable()
         try {
             manager.addLivePositionProvider(disposable) { id ->
@@ -201,13 +210,14 @@ class ContextualBookmarkManagerTest {
                 if (id == moving.record.id) BookmarkLivePosition("file:///same", 9) else null
             }
 
-            val duplicate = manager.relink(
-                moving.record.id,
-                "file:///same",
-                4,
-                2,
-                LocationSignature(currentLineHash = "target"),
-            )
+            val duplicate =
+                manager.relink(
+                    moving.record.id,
+                    "file:///same",
+                    4,
+                    2,
+                    LocationSignature(currentLineHash = "target"),
+                )
 
             assertEquals(BookmarkOperationResult.DuplicateLocation(occupied.record), duplicate)
             val unchanged = manager.allBookmarks().single { it.id == moving.record.id }
@@ -221,7 +231,11 @@ class ContextualBookmarkManagerTest {
     @Test
     fun `branch rename rewrites only matching root and old name`() {
         val (manager, _) = manager()
-        fun add(root: String, branch: String) = manager.create(
+
+        fun add(
+            root: String,
+            branch: String,
+        ) = manager.create(
             CreateBookmarkRequest(
                 "file:///$root-$branch",
                 0,
@@ -242,42 +256,46 @@ class ContextualBookmarkManagerTest {
         val (manager, _) = manager()
         val oldContext = BookmarkCreationContext(branch = BranchKey("root", "old"))
         val newContext = BookmarkCreationContext(branch = BranchKey("root", "new"))
-        val target = manager.create(
-            CreateBookmarkRequest(
-                "file:///same",
-                4,
-                mnemonic = "A",
-                scopeKind = BookmarkScopeKind.BRANCH,
-                context = newContext,
-            ),
-        ) as BookmarkOperationResult.Created
-        val duplicateLocation = manager.create(
-            CreateBookmarkRequest(
-                "file:///same",
-                4,
-                mnemonic = "B",
-                scopeKind = BookmarkScopeKind.BRANCH,
-                context = oldContext,
-            ),
-        ) as BookmarkOperationResult.Created
-        val duplicateMnemonic = manager.create(
-            CreateBookmarkRequest(
-                "file:///other",
-                8,
-                mnemonic = "A",
-                scopeKind = BookmarkScopeKind.BRANCH,
-                context = oldContext,
-            ),
-        ) as BookmarkOperationResult.Created
-        val safe = manager.create(
-            CreateBookmarkRequest(
-                "file:///safe",
-                12,
-                mnemonic = "C",
-                scopeKind = BookmarkScopeKind.BRANCH,
-                context = oldContext,
-            ),
-        ) as BookmarkOperationResult.Created
+        val target =
+            manager.create(
+                CreateBookmarkRequest(
+                    "file:///same",
+                    4,
+                    mnemonic = "A",
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    context = newContext,
+                ),
+            ) as BookmarkOperationResult.Created
+        val duplicateLocation =
+            manager.create(
+                CreateBookmarkRequest(
+                    "file:///same",
+                    4,
+                    mnemonic = "B",
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    context = oldContext,
+                ),
+            ) as BookmarkOperationResult.Created
+        val duplicateMnemonic =
+            manager.create(
+                CreateBookmarkRequest(
+                    "file:///other",
+                    8,
+                    mnemonic = "A",
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    context = oldContext,
+                ),
+            ) as BookmarkOperationResult.Created
+        val safe =
+            manager.create(
+                CreateBookmarkRequest(
+                    "file:///safe",
+                    12,
+                    mnemonic = "C",
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    context = oldContext,
+                ),
+            ) as BookmarkOperationResult.Created
 
         manager.handleBranchRename("root", "old", "new")
 
@@ -337,24 +355,26 @@ class ContextualBookmarkManagerTest {
     @Test
     fun `location updates preserve concurrent bookmark metadata and scope changes`() {
         val (manager, _) = manager()
-        val original = (
-            manager.create(CreateBookmarkRequest("file:///old", 1, mnemonic = "A", description = "Original"))
-                as BookmarkOperationResult.Created
-            ).record
+        val original =
+            (
+                manager.create(CreateBookmarkRequest("file:///old", 1, mnemonic = "A", description = "Original"))
+                    as BookmarkOperationResult.Created
+                ).record
         manager.edit(original.id, "Edited", "B")
 
-        val result = manager.updateLocation(
-            original.copy(
-                fileUrl = "file:///moved",
-                line = 12,
-                column = 3,
-                mnemonic = "A",
-                description = "Stale",
-                scopeKind = BookmarkScopeKind.BRANCH,
-                repositoryRootUrl = "file:///stale-root",
-                branchName = "stale-branch",
-            ),
-        ) as BookmarkOperationResult.Updated
+        val result =
+            manager.updateLocation(
+                original.copy(
+                    fileUrl = "file:///moved",
+                    line = 12,
+                    column = 3,
+                    mnemonic = "A",
+                    description = "Stale",
+                    scopeKind = BookmarkScopeKind.BRANCH,
+                    repositoryRootUrl = "file:///stale-root",
+                    branchName = "stale-branch",
+                ),
+            ) as BookmarkOperationResult.Updated
 
         assertEquals("file:///moved", result.record.fileUrl)
         assertEquals(12, result.record.line)
@@ -378,10 +398,11 @@ class ContextualBookmarkManagerTest {
                 BookmarkLivePosition("file:///same", 1)
             }
 
-            val result = manager.updateLocation(
-                moving.record.copy(line = 3),
-                useExistingLivePositions = false,
-            )
+            val result =
+                manager.updateLocation(
+                    moving.record.copy(line = 3),
+                    useExistingLivePositions = false,
+                )
 
             assertTrue(result is BookmarkOperationResult.Updated)
             assertEquals(0, livePositionQueries)
@@ -393,31 +414,35 @@ class ContextualBookmarkManagerTest {
     @Test
     fun `conditional navigation writes do not overwrite a newer relink`() {
         val (manager, _) = manager()
-        val captured = manager.create(
-            CreateBookmarkRequest(
-                fileUrl = "file:///old",
-                line = 1,
-                signature = LocationSignature(currentLineHash = "old"),
-            ),
-        ) as BookmarkOperationResult.Created
-        val relinked = manager.relink(
-            id = captured.record.id,
-            fileUrl = "file:///new",
-            line = 8,
-            column = 3,
-            signature = LocationSignature(currentLineHash = "new"),
-        ) as BookmarkOperationResult.Updated
+        val captured =
+            manager.create(
+                CreateBookmarkRequest(
+                    fileUrl = "file:///old",
+                    line = 1,
+                    signature = LocationSignature(currentLineHash = "old"),
+                ),
+            ) as BookmarkOperationResult.Created
+        val relinked =
+            manager.relink(
+                id = captured.record.id,
+                fileUrl = "file:///new",
+                line = 8,
+                column = 3,
+                signature = LocationSignature(currentLineHash = "new"),
+            ) as BookmarkOperationResult.Updated
 
-        val locationResult = manager.updateLocation(
-            updated = captured.record.copy(fileUrl = "file:///stale", line = 4),
-            useExistingLivePositions = false,
-            expectedLocation = captured.record,
-        )
-        val statusResult = manager.updateLocationStatus(
-            id = captured.record.id,
-            status = BookmarkLocationStatus.MISSING,
-            expectedLocation = captured.record,
-        )
+        val locationResult =
+            manager.updateLocation(
+                updated = captured.record.copy(fileUrl = "file:///stale", line = 4),
+                useExistingLivePositions = false,
+                expectedLocation = captured.record,
+            )
+        val statusResult =
+            manager.updateLocationStatus(
+                id = captured.record.id,
+                status = BookmarkLocationStatus.MISSING,
+                expectedLocation = captured.record,
+            )
 
         assertEquals(BookmarkOperationResult.StaleLocation(relinked.record), locationResult)
         assertEquals(BookmarkOperationResult.StaleLocation(relinked.record), statusResult)
@@ -459,10 +484,11 @@ class ContextualBookmarkManagerTest {
     @Test
     fun `status-only updates preserve the current persisted location`() {
         val (manager, _) = manager()
-        val record = (
-            manager.create(CreateBookmarkRequest("file:///current", 7, column = 4, description = "Current"))
-                as BookmarkOperationResult.Created
-            ).record
+        val record =
+            (
+                manager.create(CreateBookmarkRequest("file:///current", 7, column = 4, description = "Current"))
+                    as BookmarkOperationResult.Created
+                ).record
 
         val result = manager.updateLocationStatus(record.id, BookmarkLocationStatus.AMBIGUOUS) as BookmarkOperationResult.Updated
 
@@ -476,15 +502,17 @@ class ContextualBookmarkManagerTest {
     @Test
     fun `future schema makes manager mutations explicitly read only`() {
         val state = ContextualBookmarkStateService()
-        val futureXml = XmlSerializer.serialize(
-            ContextualBookmarkState(schemaVersion = CURRENT_SCHEMA_VERSION + 1),
-        ).apply {
-            addContent(
-                Element("option")
-                    .setAttribute("name", "preferredScope")
-                    .setAttribute("value", "FUTURE_SCOPE"),
-            )
-        }
+        val futureXml =
+            XmlSerializer
+                .serialize(
+                    ContextualBookmarkState(schemaVersion = CURRENT_SCHEMA_VERSION + 1),
+                ).apply {
+                    addContent(
+                        Element("option")
+                            .setAttribute("name", "preferredScope")
+                            .setAttribute("value", "FUTURE_SCOPE"),
+                    )
+                }
         state.loadState(futureXml)
         val manager = ContextualBookmarkManagerCore(state, BookmarkContextResolverCore(FakeSource()))
         val disposable = Disposer.newDisposable()
@@ -516,7 +544,9 @@ class ContextualBookmarkManagerTest {
         var changelist: ChangelistKey? = null,
     ) : BookmarkContextSource {
         override fun repositories(): Collection<RepositoryContext> = repositories
+
         override fun repositoryForFile(file: VirtualFile): RepositoryContext? = null
+
         override fun activeChangelist(): ChangelistKey? = changelist
     }
 }

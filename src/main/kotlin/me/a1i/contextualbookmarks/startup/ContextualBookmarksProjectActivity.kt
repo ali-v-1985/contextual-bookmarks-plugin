@@ -24,19 +24,30 @@ class ContextualBookmarksProjectActivity : ProjectActivity {
         tracker.start()
 
         val connection = project.messageBus.connect(project)
-        connection.subscribe(BranchChangeListener.VCS_BRANCH_CHANGED, object : BranchChangeListener {
-            override fun branchWillChange(branchName: String) = tracker.flushPositions()
-            override fun branchHasChanged(branchName: String) {
-                manager.refreshContext()
-                tracker.requestRefresh()
-            }
-        })
-        connection.subscribe(BranchRenameListener.VCS_BRANCH_RENAMED, object : BranchRenameListener {
-            override fun branchNameChanged(root: VirtualFile, oldName: String, newName: String) {
-                manager.handleBranchRename(root.url, oldName, newName)
-                manager.refreshContext()
-            }
-        })
+        connection.subscribe(
+            BranchChangeListener.VCS_BRANCH_CHANGED,
+            object : BranchChangeListener {
+                override fun branchWillChange(branchName: String) = tracker.flushPositions()
+
+                override fun branchHasChanged(branchName: String) {
+                    manager.refreshContext()
+                    tracker.requestRefresh()
+                }
+            },
+        )
+        connection.subscribe(
+            BranchRenameListener.VCS_BRANCH_RENAMED,
+            object : BranchRenameListener {
+                override fun branchNameChanged(
+                    root: VirtualFile,
+                    oldName: String,
+                    newName: String,
+                ) {
+                    manager.handleBranchRename(root.url, oldName, newName)
+                    manager.refreshContext()
+                }
+            },
+        )
         connection.subscribe(
             VcsRepositoryManager.VCS_REPOSITORY_MAPPING_UPDATED,
             VcsRepositoryMappingListener {
@@ -47,32 +58,58 @@ class ContextualBookmarksProjectActivity : ProjectActivity {
                 )
             },
         )
-        connection.subscribe(ChangeListListener.TOPIC, object : ChangeListListener {
-            override fun defaultListChanged(oldDefaultList: ChangeList?, newDefaultList: ChangeList?) {
-                tracker.flushPositions()
-                manager.refreshContext()
-            }
+        connection.subscribe(
+            ChangeListListener.TOPIC,
+            object : ChangeListListener {
+                override fun defaultListChanged(
+                    oldDefaultList: ChangeList?,
+                    newDefaultList: ChangeList?,
+                ) {
+                    tracker.flushPositions()
+                    manager.refreshContext()
+                }
 
-            override fun defaultListChanged(oldDefaultList: ChangeList?, newDefaultList: ChangeList?, automatic: Boolean) {
-                tracker.flushPositions()
-                manager.refreshContext()
-            }
+                override fun defaultListChanged(
+                    oldDefaultList: ChangeList?,
+                    newDefaultList: ChangeList?,
+                    automatic: Boolean,
+                ) {
+                    tracker.flushPositions()
+                    manager.refreshContext()
+                }
 
-            override fun changeListRenamed(list: ChangeList, oldName: String) {
-                manager.refreshContext()
-            }
+                override fun changeListRenamed(
+                    list: ChangeList,
+                    oldName: String,
+                ) {
+                    manager.refreshContext()
+                }
 
-            override fun changeListRemoved(list: ChangeList) {
-                manager.refreshContext()
-            }
-        })
-        connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
-            override fun fileOpened(source: FileEditorManager, file: VirtualFile) = tracker.requestRefresh()
-            override fun fileClosed(source: FileEditorManager, file: VirtualFile) = tracker.requestRefresh()
-        })
-        connection.subscribe(FileDocumentManagerListener.TOPIC, object : FileDocumentManagerListener {
-            override fun beforeDocumentSaving(document: com.intellij.openapi.editor.Document) = tracker.flushPositions()
-        })
+                override fun changeListRemoved(list: ChangeList) {
+                    manager.refreshContext()
+                }
+            },
+        )
+        connection.subscribe(
+            FileEditorManagerListener.FILE_EDITOR_MANAGER,
+            object : FileEditorManagerListener {
+                override fun fileOpened(
+                    source: FileEditorManager,
+                    file: VirtualFile,
+                ) = tracker.requestRefresh()
+
+                override fun fileClosed(
+                    source: FileEditorManager,
+                    file: VirtualFile,
+                ) = tracker.requestRefresh()
+            },
+        )
+        connection.subscribe(
+            FileDocumentManagerListener.TOPIC,
+            object : FileDocumentManagerListener {
+                override fun beforeDocumentSaving(document: com.intellij.openapi.editor.Document) = tracker.flushPositions()
+            },
+        )
     }
 }
 

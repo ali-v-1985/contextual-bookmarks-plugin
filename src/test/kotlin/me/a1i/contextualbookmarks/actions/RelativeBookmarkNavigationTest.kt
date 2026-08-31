@@ -40,7 +40,12 @@ class RelativeBookmarkNavigationTest {
         assertEquals(last, relativeBookmarkForNavigation(creationOrdered, null, -1, -1, forward = false))
     }
 
-    private fun bookmark(id: String, fileUrl: String, line: Int, order: Long) = BookmarkRecord(
+    private fun bookmark(
+        id: String,
+        fileUrl: String,
+        line: Int,
+        order: Long,
+    ) = BookmarkRecord(
         id = id,
         fileUrl = fileUrl,
         line = line,
