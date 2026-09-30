@@ -196,10 +196,12 @@ jobs:
             cd "$(dirname "${signed_zip}")"
             shasum -a 256 "${signed_zip_name}"
           ) > "${checksum_file}"
-          echo "path=${signed_zip}" >> "${GITHUB_OUTPUT}"
-          echo "name=${signed_zip_name}" >> "${GITHUB_OUTPUT}"
-          echo "checksum=${checksum_file}" >> "${GITHUB_OUTPUT}"
-          echo "checksum_name=${checksum_name}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "path=${signed_zip}"
+            echo "name=${signed_zip_name}"
+            echo "checksum=${checksum_file}"
+            echo "checksum_name=${checksum_name}"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Attest signed plugin provenance
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
