@@ -10,7 +10,7 @@ pluginManagement {
 
     plugins {
         id("org.jetbrains.kotlin.jvm") version "2.4.10"
-        id("org.jetbrains.intellij.platform") version "2.18.1"
+        id("org.jetbrains.intellij.platform") version "2.19.0"
         id("org.jetbrains.intellij.platform.settings") version "2.18.1"
         id("org.jetbrains.changelog") version "2.5.0"
         id("com.diffplug.spotless") version "8.10.0"
