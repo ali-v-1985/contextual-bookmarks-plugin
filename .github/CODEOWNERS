@@ -1,0 +1,5 @@
+/.github/workflows/ @ali-v-1985
+/build.gradle.kts @ali-v-1985
+/settings.gradle.kts @ali-v-1985
+/qodana.yaml @ali-v-1985
+/scripts/verify-plugin-archive.sh @ali-v-1985

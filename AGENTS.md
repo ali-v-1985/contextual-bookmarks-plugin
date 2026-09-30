@@ -56,14 +56,22 @@ verified locally.
 Use the checked-in wrapper. The following commands have succeeded locally:
 
 ```bash
+./gradlew check
+./gradlew spotlessApply
 ./gradlew test --tests 'me.a1i.contextualbookmarks.model.*' --tests 'me.a1i.contextualbookmarks.navigation.BookmarkLocatorTest' --tests 'me.a1i.contextualbookmarks.persistence.*'
 ./gradlew test --tests 'me.a1i.contextualbookmarks.context.*' --tests 'me.a1i.contextualbookmarks.service.*'
 ./gradlew test --tests 'me.a1i.contextualbookmarks.editor.BookmarkPositionTrackerTest'
-./gradlew check
 ./gradlew buildPlugin
 ./gradlew verifyPluginProjectConfiguration verifyPluginStructure
 ./gradlew verifyPlugin
+scripts/verify-plugin-archive.sh
+scripts/test-verify-plugin-archive.sh
+go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 ```
+
+`check` includes Spotless formatting, all tests, Kover HTML/XML reports, and the
+77% line-coverage floor. Run `spotlessApply` to apply the repository formatting
+rules. The archive script expects a completed unsigned `buildPlugin` output.
 
 `verifyPlugin` is configured for the three concrete IDE releases above. Signing
 and publishing require environment-only secrets and have not been run locally.

@@ -1,37 +1,176 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to validate and publish
+        required: true
+        type: string
 
-permissions:
-  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
 
 jobs:
-  publish:
+  validate-ref:
+    name: Validate release ref
     runs-on: ubuntu-latest
-    environment: marketplace
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      release_tag: ${{ steps.validate.outputs.release_tag }}
+    steps:
+      - name: Require the requested tag as the workflow ref
+        id: validate
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+          if [[ "${REF_TYPE}" != "tag" ]]; then
+            echo "::error::Release workflow must run from a tag ref, not ${REF_TYPE} ${REF_NAME}"
+            exit 1
+          fi
+          if [[ "${REF_NAME}" != v* ]]; then
+            echo "::error::Release tag ${REF_NAME} must start with v"
+            exit 1
+          fi
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" && "${REF_NAME}" != "${DISPATCH_TAG}" ]]; then
+            echo "::error::Dispatch input ${DISPATCH_TAG} does not match workflow ref ${REF_NAME}"
+            exit 1
+          fi
+          echo "release_tag=${REF_NAME}" >> "${GITHUB_OUTPUT}"
+
+  verify-merged-checks:
+    name: Require successful merged checks
+    needs: validate-ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      actions: read
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.validate-ref.outputs.release_tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+      - name: Require successful checks for the tagged commit
+        run: |
+          set -euo pipefail
+          git fetch origin master
+          if ! git merge-base --is-ancestor HEAD origin/master; then
+            echo "::error::Release tag ${RELEASE_TAG} is not reachable from master"
+            exit 1
+          fi
+
+          release_sha="$(git rev-parse HEAD)"
+          required_workflows=(
+            "build.yml|Build"
+            "qodana_code_quality.yml|Qodana"
+            "codeql.yml|CodeQL"
+          )
+          deadline=$((SECONDS + 3900))
+
+          while true; do
+            waiting=0
+            for requirement in "${required_workflows[@]}"; do
+              workflow="${requirement%%|*}"
+              label="${requirement#*|}"
+              run_record="$(
+                gh api \
+                  "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=master&event=push&head_sha=${release_sha}&per_page=1" \
+                  --jq '.workflow_runs[0] // empty | [.id, .status, (.conclusion // ""), .html_url] | join("|")'
+              )"
+
+              if [[ -z "${run_record}" ]]; then
+                echo "Waiting for ${label} on ${release_sha}: no push run found"
+                waiting=1
+                continue
+              fi
+
+              IFS='|' read -r run_id status conclusion run_url <<< "${run_record}"
+              if [[ "${status}" == "completed" ]]; then
+                if [[ "${conclusion}" != "success" ]]; then
+                  echo "::error::${label} run ${run_id} concluded ${conclusion}: ${run_url}"
+                  exit 1
+                fi
+                echo "${label} passed for ${release_sha}: ${run_url}"
+              else
+                echo "Waiting for ${label} run ${run_id}: ${status} (${run_url})"
+                waiting=1
+              fi
+            done
+
+            if [[ ${waiting} -eq 0 ]]; then
+              break
+            fi
+            if ((SECONDS >= deadline)); then
+              echo "::error::Timed out waiting for merged-commit checks on ${release_sha}"
+              exit 1
+            fi
+            sleep 30
+          done
+
+  publish:
+    name: Verify, sign, and publish
+    needs:
+      - validate-ref
+      - verify-merged-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: marketplace
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ needs.validate-ref.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
-      - name: Verify release tag matches project version
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+      - name: Verify release version and changelog
         run: |
+          set -euo pipefail
           PROJECT_VERSION="$(./gradlew properties -q | awk '$1 == "version:" { print $2 }')"
           EXPECTED_TAG="v${PROJECT_VERSION}"
           if [[ "${RELEASE_TAG}" != "${EXPECTED_TAG}" ]]; then
             echo "::error::Release tag ${RELEASE_TAG} does not match project version tag ${EXPECTED_TAG}"
             exit 1
           fi
+          if [[ "${PROJECT_VERSION}" == *SNAPSHOT* ]]; then
+            echo "::error::Snapshot version ${PROJECT_VERSION} cannot be published"
+            exit 1
+          fi
+          if ! grep -Fq "## [${PROJECT_VERSION}]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no release section for ${PROJECT_VERSION}"
+            exit 1
+          fi
 
-      - name: Test, build, and verify compatibility
+      - name: Clean quality gate and compatibility verification
         run: ./gradlew clean check buildPlugin verifyPluginProjectConfiguration verifyPluginStructure verifyPlugin
+
+      - name: Validate plugin ZIP contents
+        run: scripts/verify-plugin-archive.sh
 
       - name: Sign and verify exact release artifact
         env:
@@ -40,25 +179,74 @@ jobs:
           CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
         run: ./gradlew signPlugin verifyPluginSignature
 
-      - name: Publish hidden Marketplace update
+      - name: Prepare signed artifact and checksum
+        id: release-artifact
+        run: |
+          set -euo pipefail
+          signed_archives=(build/distributions/*-signed.zip)
+          if [[ ${#signed_archives[@]} -ne 1 || ! -f "${signed_archives[0]}" ]]; then
+            echo "::error::Expected exactly one signed plugin ZIP"
+            exit 1
+          fi
+          signed_zip="${signed_archives[0]}"
+          checksum_file="${signed_zip}.sha256"
+          signed_zip_name="$(basename "${signed_zip}")"
+          checksum_name="$(basename "${checksum_file}")"
+          (
+            cd "$(dirname "${signed_zip}")"
+            shasum -a 256 "${signed_zip_name}"
+          ) > "${checksum_file}"
+          echo "path=${signed_zip}" >> "${GITHUB_OUTPUT}"
+          echo "name=${signed_zip_name}" >> "${GITHUB_OUTPUT}"
+          echo "checksum=${checksum_file}" >> "${GITHUB_OUTPUT}"
+          echo "checksum_name=${checksum_name}" >> "${GITHUB_OUTPUT}"
+
+      - name: Attest signed plugin provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ steps.release-artifact.outputs.path }}
+
+      - name: Publish immutable GitHub release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNED_ZIP: ${{ steps.release-artifact.outputs.path }}
+          SIGNED_ZIP_NAME: ${{ steps.release-artifact.outputs.name }}
+          CHECKSUM_FILE: ${{ steps.release-artifact.outputs.checksum }}
+          CHECKSUM_NAME: ${{ steps.release-artifact.outputs.checksum_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            existing_dir="${RUNNER_TEMP}/existing-release"
+            mkdir -p "${existing_dir}"
+            if ! gh release download "${RELEASE_TAG}" --pattern "${SIGNED_ZIP_NAME}" --dir "${existing_dir}"; then
+              echo "::error::Release ${RELEASE_TAG} exists without ${SIGNED_ZIP_NAME}; refusing to mutate it"
+              exit 1
+            fi
+            if ! gh release download "${RELEASE_TAG}" --pattern "${CHECKSUM_NAME}" --dir "${existing_dir}"; then
+              echo "::error::Release ${RELEASE_TAG} exists without ${CHECKSUM_NAME}; refusing to mutate it"
+              exit 1
+            fi
+            if ! cmp -s "${SIGNED_ZIP}" "${existing_dir}/${SIGNED_ZIP_NAME}"; then
+              echo "::error::Release ${RELEASE_TAG} already contains a different ${SIGNED_ZIP_NAME}"
+              exit 1
+            fi
+            if ! cmp -s "${CHECKSUM_FILE}" "${existing_dir}/${CHECKSUM_NAME}"; then
+              echo "::error::Release ${RELEASE_TAG} already contains a different ${CHECKSUM_NAME}"
+              exit 1
+            fi
+          else
+            gh release create "${RELEASE_TAG}" \
+              "${SIGNED_ZIP}" \
+              "${CHECKSUM_FILE}" \
+              --verify-tag \
+              --generate-notes \
+              --title "${RELEASE_TAG}"
+          fi
+
+      - name: Publish verified signed artifact as a hidden Marketplace update
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
           CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
         run: ./gradlew publishPlugin
-
-      - name: Attach signed ZIP to GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" build/distributions/*-signed.zip --clobber
-
-      - name: Prepare changelog update
-        run: ./gradlew patchChangelog
-
-      - name: Upload patched changelog
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: patched-changelog
-          path: CHANGELOG.md

@@ -100,13 +100,21 @@ Use the checked-in Gradle wrapper. These commands have been run successfully in
 this repository:
 
 ```bash
+./gradlew check
+./gradlew spotlessApply
 ./gradlew test --tests 'me.a1i.contextualbookmarks.model.*' --tests 'me.a1i.contextualbookmarks.navigation.BookmarkLocatorTest' --tests 'me.a1i.contextualbookmarks.persistence.*'
 ./gradlew test --tests 'me.a1i.contextualbookmarks.context.*' --tests 'me.a1i.contextualbookmarks.service.*'
 ./gradlew test --tests 'me.a1i.contextualbookmarks.editor.BookmarkPositionTrackerTest'
 ./gradlew verifyPluginProjectConfiguration verifyPluginStructure
 ./gradlew buildPlugin
 ./gradlew verifyPlugin
+scripts/verify-plugin-archive.sh
+scripts/test-verify-plugin-archive.sh
 ```
+
+`check` enforces formatting, tests, and the current 77% line-coverage floor.
+See [the quality-gate guide](docs/quality-gate.md) for CI failure conditions,
+required repository settings, and the tag-driven release process.
 
 The `runIde` task launches the development sandbox. The local startup log
 confirmed that Contextual Bookmarks 0.1.0 loaded, but the downloaded IDEA
@@ -114,8 +122,9 @@ distribution then initiated its own bundled-plugin update/restart and caused the
 Gradle task to exit with code 2, so it is not listed as a verified command above.
 Signing uses only the `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`, and
 `CERTIFICATE_CHAIN` environment variables. Publishing additionally requires
-`PUBLISH_TOKEN`; do not run `publishPlugin` without intentionally authorizing a
-Marketplace release.
+`PUBLISH_TOKEN`. A protected `v*` tag runs the clean release gate before creating
+an immutable GitHub Release and publishing a hidden Marketplace update; do not
+run `publishPlugin` without intentionally authorizing a Marketplace release.
 
 ## Current limitations
 

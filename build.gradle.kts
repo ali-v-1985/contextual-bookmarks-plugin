@@ -1,11 +1,15 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.PublishPluginTask
+import org.jetbrains.intellij.platform.gradle.tasks.SignPluginTask
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.intellij.platform")
     id("org.jetbrains.changelog")
+    id("com.diffplug.spotless")
+    id("org.jetbrains.kotlinx.kover")
 }
 
 dependencies {
@@ -17,11 +21,61 @@ dependencies {
         // VcsRepositoryManager is public API but is physically shipped in this module in build 253.
         bundledModule("intellij.platform.vcs.dvcs.impl")
         testFramework(TestFrameworkType.Platform)
+        zipSigner("0.1.43")
     }
 }
 
 kotlin {
     jvmToolchain(21)
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint("1.8.0")
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint("1.8.0")
+    }
+    format("misc") {
+        target(
+            "*.md",
+            "*.yml",
+            "*.yaml",
+            "docs/**/*.md",
+            ".github/**/*.yml",
+            ".editorconfig",
+            ".gitignore",
+            "gradle.properties",
+        )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+kover {
+    reports {
+        filters {
+            includes {
+                classes("me.a1i.contextualbookmarks.*")
+            }
+        }
+        total {
+            html {
+                onCheck = true
+            }
+            xml {
+                onCheck = true
+            }
+            verify {
+                rule {
+                    // The measured baseline is 77.33%; keep coverage from regressing.
+                    minBound(77)
+                }
+            }
+        }
+    }
 }
 
 intellijPlatform {
@@ -32,13 +86,14 @@ intellijPlatform {
             // IntelliJ IDEA 2026.2.1 resolves to build branch 262.
             untilBuild = "262.*"
         }
-        changeNotes = provider {
-            changelog.renderItem(
-                changelog.getOrNull(project.version.toString())
-                    ?: changelog.getUnreleased(),
-                Changelog.OutputType.HTML,
-            )
-        }
+        changeNotes =
+            provider {
+                changelog.renderItem(
+                    changelog.getOrNull(project.version.toString())
+                        ?: changelog.getUnreleased(),
+                    Changelog.OutputType.HTML,
+                )
+            }
     }
 
     pluginVerification {
@@ -62,6 +117,16 @@ intellijPlatform {
 }
 
 tasks {
+    val signPluginTask = named<SignPluginTask>("signPlugin")
+
+    named<PublishPluginTask>("publishPlugin") {
+        archiveFile.set(signPluginTask.flatMap { it.signedArchiveFile })
+    }
+
+    check {
+        dependsOn(koverVerify)
+    }
+
     wrapper {
         gradleVersion = "9.7.1"
         distributionType = Wrapper.DistributionType.BIN
