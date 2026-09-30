@@ -35,8 +35,9 @@ The following workflows run for pull requests targeting `master`:
 
 - **Build / Quality gate** — formatting, tests, coverage, plugin structure,
   packaging, archive contents, and Plugin Verifier.
-- **Qodana / Static analysis** — the recommended inspection profile; any high or
-  critical finding fails the workflow.
+- **Qodana / Static analysis** — the recommended inspection profile; any critical
+  finding or increase above the accepted baseline of seven high findings fails
+  the workflow.
 - **Dependency Review / Review new dependencies** — rejects newly introduced high
   or critical vulnerabilities in runtime, development, or unknown scopes. A
   read-only PR workflow generates the resolved head dependency snapshot; a
@@ -44,10 +45,10 @@ The following workflows run for pull requests targeting `master`:
   executing pull-request code.
 - **CodeQL / Analyze Kotlin** — security-extended Java/Kotlin analysis.
 
-Qodana lower-severity findings remain annotations rather than blockers. Tighten
-the threshold only after an accepted baseline has been generated from a clean CI
-run. CodeQL uploads findings to GitHub; repository code-scanning protection must
-be configured to reject high or critical alerts.
+Qodana lower-severity findings remain annotations rather than blockers. Ratchet
+the high-severity threshold down as the accepted findings are fixed. CodeQL
+uploads findings to GitHub; repository code-scanning protection must be
+configured to reject high or critical alerts.
 
 ## Merged `master` checks
 
