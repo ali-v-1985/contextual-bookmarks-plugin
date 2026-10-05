@@ -14,7 +14,7 @@ pluginManagement {
         id("org.jetbrains.intellij.platform.settings") version "2.18.1"
         id("org.jetbrains.changelog") version "2.5.0"
         id("com.diffplug.spotless") version "8.10.0"
-        id("org.jetbrains.kotlinx.kover") version "0.9.8"
+        id("org.jetbrains.kotlinx.kover") version "0.9.11"
         id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     }
 }
